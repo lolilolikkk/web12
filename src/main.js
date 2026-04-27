@@ -1,29 +1,49 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth();
+let db, auth;
 
-// Error Handling
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
+// Load config and initialize
+async function initFirebase() {
+    try {
+        const response = await fetch('firebase-applet-config.json');
+        const firebaseConfig = await response.json();
+
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+        auth = getAuth();
+        
+        // Try sign in but don't block if it fails (Anonymous auth might be disabled)
+        signInAnonymously(auth).then(() => {
+            console.log("Firebase Signed In Anonymously");
+        }).catch(e => {
+            console.warn("Anonymous Auth disabled in console. Browsing as guest.", e.message);
+        });
+        
+        console.log("Firebase Initialized");
+    } catch (e) {
+        console.error("Firebase Init Failed", e);
+    }
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+initFirebase();
+
+const OperationType = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  LIST: 'list',
+  GET: 'get',
+  WRITE: 'write',
+};
+
+function handleFirestoreError(error, operationType, path) {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
     },
     operationType,
     path
@@ -34,6 +54,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 // Connection check
 async function testConnection() {
+  while (!db) await new Promise(r => setTimeout(r, 100));
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
@@ -243,11 +264,11 @@ let currentCategory = 'all';
 document.addEventListener('DOMContentLoaded', async () => {
     setLanguage(currentLang);
     
-    // Sign in anonymously to allow Firestore access
-    try {
-        await signInAnonymously(auth);
-    } catch (e) {
-        console.error("Auth failed", e);
+    // Wait for Firestore to be ready
+    let attempts = 0;
+    while (!db && attempts < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
     }
 
     // Check URL hash on load
