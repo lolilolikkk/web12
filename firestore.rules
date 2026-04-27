@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // Master check - for simplicity in this demo, we allow if authenticated.
+    // In production, you'd check a specific UID or role.
+    function isMaster() { return isSignedIn(); }
+
+    match /inventory/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn() && isValidProduct(incoming());
+    }
+
+    match /orders/{orderId} {
+      allow list: if true; // We rely on query filtering for now, but rules should be tighter
+      allow get: if true;
+      allow create: if isValidOrder(incoming());
+      allow update, delete: if isMaster();
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'image', 'shopId'])
+          && data.name is string && data.name.size() <= 200
+          && data.price is number
+          && data.image is string
+          && data.shopId is string;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['productName', 'price', 'shopName', 'phone', 'status'])
+          && data.productName is string
+          && data.price is number
+          && data.shopName is string
+          && data.phone is string
+          && data.status in ['pending', 'Accepted', 'Refused'];
+    }
+  }
+}

@@ -1,3 +1,49 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'firebase/firestore';
+import firebaseConfig from '../firebase-applet-config.json';
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const auth = getAuth();
+
+// Error Handling
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// Connection check
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration.");
+    }
+  }
+}
+testConnection();
+
 // DATA CONSTANTS
 const SHOPS = [
     {
@@ -194,8 +240,16 @@ let currentLang = localStorage.getItem('aneeq_lang') || 'en';
 let currentCategory = 'all';
 
 // INIT
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     setLanguage(currentLang);
+    
+    // Sign in anonymously to allow Firestore access
+    try {
+        await signInAnonymously(auth);
+    } catch (e) {
+        console.error("Auth failed", e);
+    }
+
     // Check URL hash on load
     const hash = window.location.hash.substring(1);
     if (hash && ['home', 'marketplace', 'track', 'admin', 'master'].includes(hash)) {
@@ -410,49 +464,53 @@ function filterByCategory(cat) {
 
 function renderProductFeed() {
     const t = TRANSLATIONS[currentLang];
-    const inventory = JSON.parse(localStorage.getItem('aneeq_inventory') || '{}');
     const feedContainer = document.getElementById('marketplace-feed');
     if(!feedContainer) return;
 
-    let allProducts = [];
-    Object.keys(inventory).forEach(shopId => {
-        const shop = SHOPS.find(s => s.id === shopId);
-        if(shop) {
-            inventory[shopId].forEach(p => {
-                if(currentCategory === 'all' || p.category === currentCategory) {
-                    allProducts.push({ ...p, shopId: shop.id, shopName: shop.name });
+    // Use onSnapshot for real-time updates
+    const q = query(collection(db, "inventory"));
+    onSnapshot(q, (snapshot) => {
+        let allProducts = [];
+        snapshot.forEach(doc => {
+            const p = { ...doc.data(), id: doc.id };
+            if(currentCategory === 'all' || p.category === currentCategory) {
+                const shop = SHOPS.find(s => s.id === p.shopId);
+                if(shop) {
+                    allProducts.push({ ...p, shopName: shop.name });
                 }
-            });
+            }
+        });
+
+        if(allProducts.length === 0) {
+            feedContainer.innerHTML = `<p style="text-align:center; color:#999; padding:40px; grid-column: 1/-1;">${t.noItemsMarket}</p>`;
+            return;
         }
+
+        // Shuffle for variety if 'all', otherwise sort by recent
+        if(currentCategory === 'all') {
+            allProducts.sort(() => Math.random() - 0.5);
+        } else {
+            allProducts.reverse();
+        }
+
+        feedContainer.innerHTML = allProducts.map(p => `
+            <div class="product-card">
+                <div class="product-img-wrapper">
+                    <div class="badge-shop">${p.shopName}</div>
+                    <img src="${p.image}" alt="${p.name}">
+                </div>
+                <div class="product-info">
+                    <h3>${p.name}</h3>
+                    <div class="product-price">$${p.price}</div>
+                    <button class="btn-buy" onclick="buyFromFeed('${p.shopId}', '${p.id}', '${p.name}', ${p.price}, '${p.image}')">
+                        ${t.buyNow}
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, "inventory");
     });
-
-    if(allProducts.length === 0) {
-        feedContainer.innerHTML = `<p style="text-align:center; color:#999; padding:40px; grid-column: 1/-1;">${t.noItemsMarket}</p>`;
-        return;
-    }
-
-    // Shuffle for variety if 'all', otherwise sort by recent
-    if(currentCategory === 'all') {
-        allProducts.sort(() => Math.random() - 0.5);
-    } else {
-        allProducts.reverse();
-    }
-
-    feedContainer.innerHTML = allProducts.map(p => `
-        <div class="product-card">
-            <div class="product-img-wrapper">
-                <div class="badge-shop">${p.shopName}</div>
-                <img src="${p.image}" alt="${p.name}">
-            </div>
-            <div class="product-info">
-                <h3>${p.name}</h3>
-                <div class="product-price">$${p.price}</div>
-                <button class="btn-buy" onclick="buyFromFeed('${p.shopId}', '${p.id}', '${p.name}', ${p.price}, '${p.image}')">
-                    ${t.buyNow}
-                </button>
-            </div>
-        </div>
-    `).join('');
 }
 
 function buyFromFeed(shopId, pId, name, price, image) {
@@ -478,33 +536,39 @@ function openShop(shopId) {
 
 function renderProducts(shopId) {
     const t = TRANSLATIONS[currentLang];
-    const inventory = JSON.parse(localStorage.getItem('aneeq_inventory') || '{}');
-    const shopProducts = inventory[shopId] || [];
     const container = document.getElementById('shop-products-container');
     
     // Back to Market text
     const backBtn = document.querySelector('#view-shop .back-nav button');
     if(backBtn) backBtn.innerText = t.backToMarket;
 
-    if(shopProducts.length === 0) {
-        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">${t.noProducts}</p>`;
-        return;
-    }
+    const q = query(collection(db, "inventory"), where("shopId", "==", shopId));
+    onSnapshot(q, (snapshot) => {
+        let shopProducts = [];
+        snapshot.forEach(doc => shopProducts.push({ ...doc.data(), id: doc.id }));
 
-    container.innerHTML = shopProducts.map(p => `
-        <div class="product-card">
-            <div class="product-img-wrapper">
-                <img src="${p.image}" alt="${p.name}">
+        if(shopProducts.length === 0) {
+            container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">${t.noProducts}</p>`;
+            return;
+        }
+
+        container.innerHTML = shopProducts.map(p => `
+            <div class="product-card">
+                <div class="product-img-wrapper">
+                    <img src="${p.image}" alt="${p.name}">
+                </div>
+                <div class="product-info">
+                    <h3>${p.name}</h3>
+                    <div class="product-price">$${p.price}</div>
+                    <button class="btn-buy" onclick="openBuyModal('${p.id}', '${p.name}', ${p.price}, '${p.image}')">
+                        ${t.buyNow}
+                    </button>
+                </div>
             </div>
-            <div class="product-info">
-                <h3>${p.name}</h3>
-                <div class="product-price">$${p.price}</div>
-                <button class="btn-buy" onclick="openBuyModal('${p.id}', '${p.name}', ${p.price}, '${p.image}')">
-                    ${t.buyNow}
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, "inventory");
+    });
 }
 
 // BUY MODAL
@@ -526,7 +590,7 @@ function closeModal() {
     document.getElementById('buy-modal').classList.add('hidden');
 }
 
-function submitOrder() {
+async function submitOrder() {
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('customer-phone').value;
     if(!phone) return alert(currentLang === 'ar' ? "يرجى إدخال رقم الهاتف" : "Please enter phone");
@@ -543,23 +607,24 @@ function submitOrder() {
         }
     }
     
-    const order = {
-        id: Math.random().toString(36).substr(2, 5).toUpperCase(),
+    const orderData = {
         productName: currentProductToBuy.name,
-        price: currentProductToBuy.price,
+        price: Number(currentProductToBuy.price),
         shopName: activeShop.name,
         phone: phone,
         time: new Date().toLocaleString(),
         status: 'pending',
-        masterMessage: ''
+        masterMessage: '',
+        createdAt: serverTimestamp()
     };
     
-    const orders = JSON.parse(localStorage.getItem('aneeq_orders') || '[]');
-    orders.push(order);
-    localStorage.setItem('aneeq_orders', JSON.stringify(orders));
-    
-    closeModal();
-    showToast();
+    try {
+        await addDoc(collection(db, "orders"), orderData);
+        closeModal();
+        showToast();
+    } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, "orders");
+    }
 }
 
 function showToast() {
@@ -593,20 +658,26 @@ function handleSellerLogin() {
 
 function renderAdminInventory() {
     const t = TRANSLATIONS[currentLang];
-    const inventory = JSON.parse(localStorage.getItem('aneeq_inventory') || '{}');
-    const products = inventory[loggedInShopId] || [];
     const list = document.getElementById('admin-inventory-list');
     
-    list.innerHTML = products.map((p, idx) => `
-        <div style="display:flex; align-items:center; gap: 15px; padding:15px 0; border-bottom:1px solid #eee;">
-            <img src="${p.image}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border: 1px solid #000;">
-            <div style="flex:1;">
-                <div style="font-weight:600; font-size:14px;">${p.name}</div>
-                <div style="font-size:12px; color:#999;">$${p.price}</div>
+    const q = query(collection(db, "inventory"), where("shopId", "==", loggedInShopId));
+    onSnapshot(q, (snapshot) => {
+        let products = [];
+        snapshot.forEach(doc => products.push({ ...doc.data(), id: doc.id }));
+
+        list.innerHTML = products.map((p) => `
+            <div style="display:flex; align-items:center; gap: 15px; padding:15px 0; border-bottom:1px solid #eee;">
+                <img src="${p.image}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border: 1px solid #000;">
+                <div style="flex:1;">
+                    <div style="font-weight:600; font-size:14px;">${p.name}</div>
+                    <div style="font-size:12px; color:#999;">$${p.price}</div>
+                </div>
+                <button onclick="deleteProduct('${p.id}')" style="color:#ff4444; border:none; background:none; cursor:pointer; font-weight:600; font-size:13px; padding: 5px;">${t.delete}</button>
             </div>
-            <button onclick="deleteProduct(${idx})" style="color:#ff4444; border:none; background:none; cursor:pointer; font-weight:600; font-size:13px; padding: 5px;">${t.delete}</button>
-        </div>
-    `).join('') || `<p style="color:#999; text-align:center; padding:40px;">${t.noProducts}</p>`;
+        `).join('') || `<p style="color:#999; text-align:center; padding:40px;">${t.noProducts}</p>`;
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, "inventory");
+    });
 }
 
 let currentBase64Image = null;
@@ -628,7 +699,7 @@ function previewProductImage(input) {
     }
 }
 
-function addNewProduct() {
+async function addNewProduct() {
     const t = TRANSLATIONS[currentLang];
     const name = document.getElementById('p-name').value;
     const cat = document.getElementById('p-cat').value;
@@ -637,28 +708,35 @@ function addNewProduct() {
     
     if(!name || !price || !img) return alert(t.fillFields);
     
-    const inventory = JSON.parse(localStorage.getItem('aneeq_inventory') || '{}');
-    if(!inventory[loggedInShopId]) inventory[loggedInShopId] = [];
+    const productData = {
+        name,
+        category: cat || 'General',
+        price: Number(price),
+        image: img,
+        shopId: loggedInShopId,
+        createdAt: serverTimestamp()
+    };
     
-    inventory[loggedInShopId].push({ id: Date.now(), name, cat, price, image: img });
-    localStorage.setItem('aneeq_inventory', JSON.stringify(inventory));
-    
-    // Clear
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-cat').value = '';
-    document.getElementById('p-price').value = '';
-    document.getElementById('p-img').value = '';
-    document.getElementById('product-preview').innerHTML = '';
-    currentBase64Image = null;
-    
-    renderAdminInventory();
+    try {
+        await addDoc(collection(db, "inventory"), productData);
+        
+        // Clear
+        document.getElementById('p-name').value = '';
+        document.getElementById('p-cat').value = '';
+        document.getElementById('p-price').value = '';
+        document.getElementById('product-preview').innerHTML = '';
+        currentBase64Image = null;
+    } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, "inventory");
+    }
 }
 
-function deleteProduct(idx) {
-    const inventory = JSON.parse(localStorage.getItem('aneeq_inventory') || '{}');
-    inventory[loggedInShopId].splice(idx, 1);
-    localStorage.setItem('aneeq_inventory', JSON.stringify(inventory));
-    renderAdminInventory();
+async function deleteProduct(productId) {
+    try {
+        await deleteDoc(doc(db, "inventory", productId));
+    } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `inventory/${productId}`);
+    }
 }
 
 function logout() {
@@ -672,9 +750,8 @@ function logout() {
 function handleTrackOrder() {
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('track-phone').value;
-    if(!phone) return; // Silent if no input yet (e.g. from setLanguage)
+    if(!phone) return;
 
-    // Format phone to match stored format
     if(!phone.startsWith('+')) {
         if(phone.startsWith('0')) {
             phone = '+964' + phone.substring(1);
@@ -685,45 +762,50 @@ function handleTrackOrder() {
         }
     }
 
-    const orders = JSON.parse(localStorage.getItem('aneeq_orders') || '[]');
-    const customerOrders = orders.filter(o => o.phone === phone);
-    
     const resultsDiv = document.getElementById('track-results');
     const listDiv = document.getElementById('customer-orders-list');
-    
     resultsDiv.classList.remove('hidden');
-    
-    if(customerOrders.length === 0) {
-        listDiv.innerHTML = `<p style="text-align:center; padding:40px; color:#999; background:white; border-radius:15px;">${t.noOrdersFound}</p>`;
-    } else {
-        listDiv.innerHTML = customerOrders.reverse().map(o => {
-            const statusColor = o.status === 'Accepted' ? '#4CAF50' : (o.status === 'Refused' ? '#F44336' : '#999');
-            let displayStatus = (o.status === 'pending' || !o.status) ? (currentLang === 'ar' ? 'قيد الانتظار' : 'Pending') : o.status;
-            if(o.status === 'Accepted') displayStatus = t.statusAccepted;
-            if(o.status === 'Refused') displayStatus = t.statusRefused;
 
-            return `
-                <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${o.productName}</strong><br>
-                            <small>${o.shopName} | ${o.time}</small>
+    const q = query(collection(db, "orders"), where("phone", "==", phone));
+    onSnapshot(q, (snapshot) => {
+        let customerOrders = [];
+        snapshot.forEach(doc => customerOrders.push({ ...doc.data(), id: doc.id }));
+
+        if(customerOrders.length === 0) {
+            listDiv.innerHTML = `<p style="text-align:center; padding:40px; color:#999; background:white; border-radius:15px;">${t.noOrdersFound}</p>`;
+        } else {
+            customerOrders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            listDiv.innerHTML = customerOrders.map(o => {
+                const statusColor = o.status === 'Accepted' ? '#4CAF50' : (o.status === 'Refused' ? '#F44336' : '#999');
+                let displayStatus = (o.status === 'pending' || !o.status) ? (currentLang === 'ar' ? 'قيد الانتظار' : 'Pending') : o.status;
+                if(o.status === 'Accepted') displayStatus = t.statusAccepted;
+                if(o.status === 'Refused') displayStatus = t.statusRefused;
+
+                return `
+                    <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${o.productName}</strong><br>
+                                <small>${o.shopName} | ${o.time}</small>
+                            </div>
+                            <span style="background: ${statusColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">${displayStatus}</span>
                         </div>
-                        <span style="background: ${statusColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">${displayStatus}</span>
+                        
+                        ${o.masterMessage ? `
+                            <div style="background: #f8f8f8; padding: 15px; border-radius: 12px; border-left: 4px solid ${statusColor}; margin-top: 5px;">
+                                <p style="font-size: 11px; color: #999; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">${currentLang === 'ar' ? 'رسالة من أنيق ماستر' : 'Message from aneeq Master'}</p>
+                                <p style="color: #333; font-style: italic; line-height: 1.5;">"${o.masterMessage}"</p>
+                            </div>
+                        ` : `
+                            <p style="font-size: 12px; color: #999; margin-top: 5px;">${t.waitMaster}</p>
+                        `}
                     </div>
-                    
-                    ${o.masterMessage ? `
-                        <div style="background: #f8f8f8; padding: 15px; border-radius: 12px; border-left: 4px solid ${statusColor}; margin-top: 5px;">
-                            <p style="font-size: 11px; color: #999; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">${currentLang === 'ar' ? 'رسالة من أنيق ماستر' : 'Message from aneeq Master'}</p>
-                            <p style="color: #333; font-style: italic; line-height: 1.5;">"${o.masterMessage}"</p>
-                        </div>
-                    ` : `
-                        <p style="font-size: 12px; color: #999; margin-top: 5px;">${t.waitMaster}</p>
-                    `}
-                </div>
-            `;
-        }).join('');
-    }
+                `;
+            }).join('');
+        }
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, "orders");
+    });
 }
 
 // MASTER ADMIN
@@ -741,82 +823,85 @@ function handleMasterLogin() {
 
 function renderMasterOrders() {
     const t = TRANSLATIONS[currentLang];
-    const orders = JSON.parse(localStorage.getItem('aneeq_orders') || '[]');
     const container = document.getElementById('master-orders-list');
     
-    document.getElementById('master-stats').innerHTML = `
-        <div style="display:flex; gap:20px; margin-top:20px;">
-            <div>${t.totalLabel}${orders.length}</div>
-            <div style="color:lawngreen">${t.systemOnline}</div>
-        </div>
-    `;
+    // Real-time listener for master
+    const q = query(collection(db, "orders"));
+    onSnapshot(q, (snapshot) => {
+        let orders = [];
+        snapshot.forEach(doc => orders.push({ ...doc.data(), id: doc.id }));
 
-    const reversedOrders = [...orders].reverse();
-
-    container.innerHTML = reversedOrders.map((o) => {
-        const statusColor = o.status === 'Accepted' ? '#4CAF50' : (o.status === 'Refused' ? '#F44336' : '#999');
-        let displayStatus = (o.status === 'pending' || !o.status) ? (currentLang === 'ar' ? 'قيد الانتظار' : 'Pending') : o.status;
-        if(o.status === 'Accepted') displayStatus = t.statusAccepted;
-        if(o.status === 'Refused') displayStatus = t.statusRefused;
-
-        return `
-        <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <strong style="font-size: 1.1em;">${o.productName}</strong><br>
-                    <small>${o.shopName} | ${o.time}</small><br>
-                    <span style="color:var(--accent); font-weight:700;">$${o.price}</span>
-                </div>
-                <div style="text-align:right">
-                    <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase;">${displayStatus}</span><br>
-                    <span style="color:#999; font-size:12px; display: block; margin-top: 5px;">${t.phLabel} ${o.phone}</span>
-                </div>
+        document.getElementById('master-stats').innerHTML = `
+            <div style="display:flex; gap:20px; margin-top:20px;">
+                <div>${t.totalLabel}${orders.length}</div>
+                <div style="color:lawngreen">${t.systemOnline}</div>
             </div>
+        `;
 
-            ${(o.status === 'pending' || !o.status) ? `
-                <div style="border-top: 1px solid #eee; padding-top: 15px;">
-                    <p style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #444;">${t.masterAction}</p>
-                    <textarea id="msg-${o.id}" placeholder="${t.typeMessage}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 14px; min-height: 60px;"></textarea>
-                    <div style="display: flex; gap: 10px;">
-                        <button onclick="updateOrderStatus('${o.id}', 'Accepted')" style="flex: 1; background: #4CAF50; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">${t.acceptRequest}</button>
-                        <button onclick="updateOrderStatus('${o.id}', 'Refused')" style="flex: 1; background: #F44336; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">${t.refuseRequest}</button>
+        orders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+        container.innerHTML = orders.map((o) => {
+            const statusColor = o.status === 'Accepted' ? '#4CAF50' : (o.status === 'Refused' ? '#F44336' : '#999');
+            let displayStatus = (o.status === 'pending' || !o.status) ? (currentLang === 'ar' ? 'قيد الانتظار' : 'Pending') : o.status;
+            if(o.status === 'Accepted') displayStatus = t.statusAccepted;
+            if(o.status === 'Refused') displayStatus = t.statusRefused;
+
+            return `
+            <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="font-size: 1.1em;">${o.productName}</strong><br>
+                        <small>${o.shopName} | ${o.time}</small><br>
+                        <span style="color:var(--accent); font-weight:700;">$${o.price}</span>
+                    </div>
+                    <div style="text-align:right">
+                        <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase;">${displayStatus}</span><br>
+                        <span style="color:#999; font-size:12px; display: block; margin-top: 5px;">${t.phLabel} ${o.phone}</span>
                     </div>
                 </div>
-            ` : `
-                <div style="border-top: 1px solid #eee; padding-top: 10px; font-size: 13px;">
-                    <strong>${t.messageSent}</strong> <span style="color: #666;">${o.masterMessage || 'No message provided.'}</span>
-                    <button onclick="deleteOrderByID('${o.id}')" style="display: block; margin-top: 10px; background: none; border: none; color: #999; cursor: pointer; font-size: 11px; text-decoration: underline; padding: 0;">${t.removeHistory}</button>
-                </div>
-            `}
-        </div>
-    `}).join('') || `<p style="color:#999; text-align:center;">${t.noItemsMarket}</p>`;
+
+                ${(o.status === 'pending' || !o.status) ? `
+                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                        <p style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #444;">${t.masterAction}</p>
+                        <textarea id="msg-${o.id}" placeholder="${t.typeMessage}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 14px; min-height: 60px;"></textarea>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="updateOrderStatus('${o.id}', 'Accepted')" style="flex: 1; background: #4CAF50; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">${t.acceptRequest}</button>
+                            <button onclick="updateOrderStatus('${o.id}', 'Refused')" style="flex: 1; background: #F44336; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">${t.refuseRequest}</button>
+                        </div>
+                    </div>
+                ` : `
+                    <div style="border-top: 1px solid #eee; padding-top: 10px; font-size: 13px;">
+                        <strong>${t.messageSent}</strong> <span style="color: #666;">${o.masterMessage || 'No message provided.'}</span>
+                        <button onclick="deleteOrderByID('${o.id}')" style="display: block; margin-top: 10px; background: none; border: none; color: #999; cursor: pointer; font-size: 11px; text-decoration: underline; padding: 0;">${t.removeHistory}</button>
+                    </div>
+                `}
+            </div>
+        `}).join('') || `<p style="color:#999; text-align:center;">${t.noItemsMarket}</p>`;
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, "orders");
+    });
 }
 
-function updateOrderStatus(orderId, newStatus) {
-    const msg = document.getElementById(`msg-${orderId}`).value;
-    const orders = JSON.parse(localStorage.getItem('aneeq_orders') || '[]');
-    const orderIndex = orders.findIndex(o => o.id === orderId);
+async function updateOrderStatus(orderId, newStatus) {
+    const msgInput = document.getElementById(`msg-${orderId}`);
+    const msg = msgInput ? msgInput.value : "";
     
-    if(orderIndex !== -1) {
-        orders[orderIndex].status = newStatus;
-        orders[orderIndex].masterMessage = msg;
-        localStorage.setItem('aneeq_orders', JSON.stringify(orders));
-        renderMasterOrders();
+    try {
+        await updateDoc(doc(db, "orders", orderId), {
+            status: newStatus,
+            masterMessage: msg
+        });
+    } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `orders/${orderId}`);
     }
 }
 
-function deleteOrderByID(orderId) {
-    const orders = JSON.parse(localStorage.getItem('aneeq_orders') || '[]');
-    const filtered = orders.filter(o => o.id !== orderId);
-    localStorage.setItem('aneeq_orders', JSON.stringify(filtered));
-    renderMasterOrders();
-}
-
-function removeOrder(idx) {
-    const orders = JSON.parse(localStorage.getItem('aneeq_orders') || '[]');
-    orders.reverse().splice(idx, 1);
-    localStorage.setItem('aneeq_orders', JSON.stringify(orders.reverse()));
-    renderMasterOrders();
+async function deleteOrderByID(orderId) {
+    try {
+        await deleteDoc(doc(db, "orders", orderId));
+    } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `orders/${orderId}`);
+    }
 }
 
 // Attach to window for global access
@@ -834,6 +919,7 @@ window.handleTrackOrder = handleTrackOrder;
 window.handleMasterLogin = handleMasterLogin;
 window.updateOrderStatus = updateOrderStatus;
 window.deleteOrderByID = deleteOrderByID;
-window.removeOrder = removeOrder;
 window.setLanguage = setLanguage;
+window.filterByCategory = filterByCategory;
+window.previewProductImage = previewProductImage;
 

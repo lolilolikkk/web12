@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product listed by a shop.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "image": { "type": "string", "description": "Base64 image string" },
+        "shopId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "image", "shopId"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A purchase request from a customer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productName": { "type": "string" },
+        "price": { "type": "number" },
+        "shopName": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "Accepted", "Refused"] },
+        "masterMessage": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "time": { "type": "string", "description": "Display time string" }
+      },
+      "required": ["productName", "price", "shopName", "phone", "status"]
+    }
+  },
+  "firestore": {
+    "/inventory/{productId}": {
+      "schema": "Product",
+      "description": "Collection of all products from all shops."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of all customer orders."
+    }
+  }
+}
