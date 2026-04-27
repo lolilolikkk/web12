@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aneeq | Marketplace</title>
+    <link rel="stylesheet" href="/src/index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="max-content flex-nav">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="logo" onclick="showView('home')">aneeq</div>
+                <div class="lang-switch">
+                    <button onclick="setLanguage('en')" class="lang-btn" id="btn-en">EN</button>
+                    <span style="color: #eee;">|</span>
+                    <button onclick="setLanguage('ar')" class="lang-btn" id="btn-ar">عربي</button>
+                </div>
+            </div>
+            <nav>
+                <button onclick="showView('marketplace')">Marketplace</button>
+                <button onclick="showView('track')">Track Order</button>
+                <button onclick="showView('admin')">Seller Portal</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-content">
+        <!-- 0. HOME VIEW -->
+        <section id="view-home" class="view">
+            <div class="home-hero">
+                <h1>Where Style Meets <span class="accent-text">Identity.</span></h1>
+                <p>Welcome to aneeq, the premium marketplace for independent creators and discerning collectors.</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button class="btn-primary large" onclick="showView('marketplace')">Enter Marketplace</button>
+                    <button class="btn-outline large" onclick="showView('track')" style="background: white; border-radius: 12px; font-weight: 600; padding: 18px 40px;">Track My Order</button>
+                </div>
+            </div>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Curated Excellence</h3>
+                    <p>Every shop on our platform is hand-picked for quality and originality.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Direct Connect</h3>
+                    <p>Request pieces directly from creators through our secure portal.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Global Vision</h3>
+                    <p>Wear pieces that aren't available anywhere else in the world.</p>
+                </div>
+            </div>
+
+            <div class="home-promo">
+                <div class="promo-text">
+                    <h2>Own items that tell a story.</h2>
+                    <p>Moving away from fast fashion towards intentional ownership. aneeq connects you to the makers behind the craft.</p>
+                    <button class="btn-outline" onclick="showView('marketplace')">Discover Brands</button>
+                </div>
+                <div class="promo-img">
+                    <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800" alt="Promo">
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. MARKETPLACE VIEW -->
+        <section id="view-marketplace" class="view hidden">
+            <div class="hero">
+                <div class="hero-tag">Curated Collections</div>
+                <h1>Independent Brands</h1>
+                <p>Discovery premium pieces from the world's most unique creators.</p>
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterByCategory('all')">All</button>
+                <button class="filter-btn" onclick="filterByCategory('Hoodies')">Hoodies</button>
+                <button class="filter-btn" onclick="filterByCategory('Tees')">Tees</button>
+                <button class="filter-btn" onclick="filterByCategory('Accessories')">Accessories</button>
+                <button class="filter-btn" onclick="filterByCategory('Outerwear')">Outerwear</button>
+            </div>
+
+            <div class="grid-shops" id="shops-list">
+                <!-- Shops injected here -->
+            </div>
+
+            <div class="feed-header">
+                <h2>Marketplace Feed</h2>
+                <div class="feed-meta">Showing all unique pieces</div>
+            </div>
+            <div class="products-grid" id="marketplace-feed">
+                <!-- Global products injected here -->
+            </div>
+        </section>
+
+        <!-- 1.5 TRACK ORDER VIEW -->
+        <section id="view-track" class="view hidden">
+            <div class="auth-card">
+                <h2 style="font-family: var(--font-serif); font-style: italic; font-size: 32px; margin-bottom: 10px;">Track Order</h2>
+                <p style="color: var(--muted); margin-bottom: 30px;">Enter your number to see messages from Master.</p>
+                <input type="tel" id="track-phone" placeholder="07XX XXX XXXX">
+                <button onclick="handleTrackOrder()" class="btn-primary">View Status</button>
+            </div>
+            <div id="track-results" class="hidden" style="margin-top: 40px; text-align: left;">
+                <h3 style="margin-bottom: 20px; font-family: var(--font-serif); font-style: italic; font-size: 28px;">My Request Status</h3>
+                <div id="customer-orders-list" class="orders-stack"></div>
+            </div>
+        </section>
+
+        <!-- 2. SHOP DETAIL VIEW -->
+        <section id="view-shop" class="view hidden">
+            <div class="back-nav">
+                <button onclick="showView('marketplace')">← Back to Marketplace</button>
+            </div>
+            <div id="shop-header-container"></div>
+            <div id="shop-products-container" class="products-grid">
+                <!-- Products injected here -->
+            </div>
+        </section>
+
+        <!-- 3. SELLER ADMIN VIEW -->
+        <section id="view-admin" class="view hidden">
+            <div id="admin-login" class="auth-card">
+                <h2>Seller Login</h2>
+                <select id="admin-shop-select"></select>
+                <input type="password" id="admin-pass" placeholder="Store Passkey">
+                <button onclick="handleSellerLogin()">Enter Dashboard</button>
+            </div>
+            <div id="admin-dashboard" class="hidden">
+                <div class="admin-header">
+                    <h2 id="admin-store-name">Store Manager</h2>
+                    <button class="btn-outline" onclick="logout()">Logout</button>
+                </div>
+                <div class="admin-grid">
+                    <div class="admin-form cardi">
+                        <h3>Add New Product</h3>
+                        <input type="text" id="p-name" placeholder="Product Name">
+                        <input type="text" id="p-cat" placeholder="Category (e.g. Hoodies)">
+                        <input type="number" id="p-price" placeholder="Price ($)">
+                        <div class="file-upload-group">
+                            <label for="p-img" class="file-label">
+                                <span class="upload-icon">+</span>
+                                <span class="upload-text">Upload Product Image</span>
+                            </label>
+                            <input type="file" id="p-img" accept="image/*" onchange="previewProductImage(this)">
+                            <div id="product-preview" class="image-preview"></div>
+                        </div>
+                        <button onclick="addNewProduct()" class="btn-primary" style="margin-top: 10px;">Publish Product</button>
+                    </div>
+                    <div class="admin-list cardi">
+                        <h3>Inventory</h3>
+                        <div id="admin-inventory-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. MASTER ADMIN VIEW -->
+        <section id="view-master" class="view hidden">
+            <div id="master-login" class="auth-card danger">
+                <h2>aneeq Master</h2>
+                <p>Authorized access only.</p>
+                <input type="password" id="master-pass" placeholder="Master Key">
+                <button onclick="handleMasterLogin()">Verify Identity</button>
+            </div>
+            <div id="master-dashboard" class="hidden">
+                <div class="master-header">
+                    <h2>Marketplace Command Center</h2>
+                    <div id="master-stats"></div>
+                </div>
+                <div id="master-orders-list" class="orders-stack">
+                    <!-- Orders injected here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="max-content">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="logo">aneeq</div>
+                <p>Redefining independent retail for the modern age.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Platform</h4>
+                <button onclick="showView('home')">Home</button>
+                <button onclick="showView('marketplace')">Marketplace</button>
+                <button onclick="showView('admin')">Seller Portal</button>
+            </div>
+            <div class="footer-legal">
+                <h4>Support</h4>
+                <p>Contact Us</p>
+                <p>Terms of Service</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 aneeq Marketplace. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- BUY MODAL -->
+    <div id="buy-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Purchase Request</h3>
+            <div id="modal-product-info"></div>
+            <p class="modal-hint">Enter your phone number. The seller will contact you to finalize.</p>
+            <input type="tel" id="customer-phone" placeholder="Phone Number (e.g. 0770 000 0000)">
+            <button onclick="submitOrder()" class="btn-primary">Confirm Request</button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="toast" class="toast hidden">Request Sent to Master!</div>
+
+    <script src="/src/main.js"></script>
+</body>
+</html>
