@@ -1,47 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Safety Net
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Helper Functions
-    function isSignedIn() { return request.auth != null; }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-    
-    // Master check - for simplicity in this demo, we allow if authenticated.
-    // In production, you'd check a specific UID or role.
-    function isMaster() { return isSignedIn(); }
-
+    // PUBLIC ACCESS FOR TESTING (Permissive for 30 days)
+    // IMPORTANT: Enable Anonymous Auth in Firebase Console for better security!
     match /inventory/{productId} {
       allow read: if true;
-      allow create, update, delete: if isSignedIn() && isValidProduct(incoming());
+      allow write: if true;
     }
 
     match /orders/{orderId} {
-      allow list: if true; // We rely on query filtering for now, but rules should be tighter
-      allow get: if true;
-      allow create: if isValidOrder(incoming());
-      allow update, delete: if isMaster();
+      allow read, write: if true;
     }
-
-    function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'price', 'image', 'shopId'])
-          && data.name is string && data.name.size() <= 200
-          && data.price is number
-          && data.image is string
-          && data.shopId is string;
-    }
-
-    function isValidOrder(data) {
-      return data.keys().hasAll(['productName', 'price', 'shopName', 'phone', 'status'])
-          && data.productName is string
-          && data.price is number
-          && data.shopName is string
-          && data.phone is string
-          && data.status in ['pending', 'Accepted', 'Refused'];
+    
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

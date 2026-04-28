@@ -1,33 +1,14 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'firebase/firestore';
+import firebaseConfig from '../firebase-applet-config.json';
 
-let db, auth;
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const auth = getAuth();
 
-// Load config and initialize
-async function initFirebase() {
-    try {
-        const response = await fetch('firebase-applet-config.json');
-        const firebaseConfig = await response.json();
-
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-        auth = getAuth();
-        
-        // Try sign in but don't block if it fails (Anonymous auth might be disabled)
-        signInAnonymously(auth).then(() => {
-            console.log("Firebase Signed In Anonymously");
-        }).catch(e => {
-            console.warn("Anonymous Auth disabled in console. Browsing as guest.", e.message);
-        });
-        
-        console.log("Firebase Initialized");
-    } catch (e) {
-        console.error("Firebase Init Failed", e);
-    }
-}
-
-initFirebase();
+// Try sign in anonymously
+signInAnonymously(auth).catch(e => console.warn("Anon Auth disabled:", e.message));
 
 const OperationType = {
   CREATE: 'create',
@@ -42,27 +23,17 @@ function handleFirestoreError(error, operationType, path) {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth?.currentUser?.uid,
-      email: auth?.currentUser?.email,
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
     },
     operationType,
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
 }
 
 // Connection check
 async function testConnection() {
-  let attempts = 0;
-  while (!db && attempts < 50) {
-    await new Promise(r => setTimeout(r, 100));
-    attempts++;
-  }
-  if (!db) {
-    console.error("Firebase DB not initialized in time.");
-    return;
-  }
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
@@ -269,16 +240,9 @@ let currentLang = localStorage.getItem('aneeq_lang') || 'en';
 let currentCategory = 'all';
 
 // INIT
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     setLanguage(currentLang);
     
-    // Wait for Firestore to be ready
-    let attempts = 0;
-    while (!db && attempts < 50) {
-        await new Promise(r => setTimeout(r, 100));
-        attempts++;
-    }
-
     // Check URL hash on load
     const hash = window.location.hash.substring(1);
     if (hash && ['home', 'marketplace', 'track', 'admin', 'master'].includes(hash)) {
@@ -492,10 +456,6 @@ function filterByCategory(cat) {
 }
 
 function renderProductFeed() {
-    if (!db) {
-        setTimeout(renderProductFeed, 500);
-        return;
-    }
     const t = TRANSLATIONS[currentLang];
     const feedContainer = document.getElementById('marketplace-feed');
     if(!feedContainer) return;
@@ -568,10 +528,6 @@ function openShop(shopId) {
 }
 
 function renderProducts(shopId) {
-    if (!db) {
-        setTimeout(() => renderProducts(shopId), 500);
-        return;
-    }
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('shop-products-container');
     
@@ -694,10 +650,6 @@ function handleSellerLogin() {
 }
 
 function renderAdminInventory() {
-    if (!db) {
-        setTimeout(renderAdminInventory, 500);
-        return;
-    }
     const t = TRANSLATIONS[currentLang];
     const list = document.getElementById('admin-inventory-list');
     
@@ -789,10 +741,6 @@ function logout() {
 
 // TRACK ORDER (CUSTOMER)
 function handleTrackOrder() {
-    if (!db) {
-        setTimeout(handleTrackOrder, 500);
-        return;
-    }
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('track-phone').value;
     if(!phone) return;
@@ -867,10 +815,6 @@ function handleMasterLogin() {
 }
 
 function renderMasterOrders() {
-    if (!db) {
-        setTimeout(renderMasterOrders, 500);
-        return;
-    }
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('master-orders-list');
     
