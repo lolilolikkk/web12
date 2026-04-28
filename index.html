@@ -5,9 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>aneeq | Marketplace</title>
     <link rel="stylesheet" href="src/index.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #E5C3A6;
+            --font-serif: 'Playfair Display', serif;
+        }
+        .hidden { display: none !important; }
+        #app-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+            transition: opacity 0.5s;
+        }
+        .loader-spin {
+            width: 40px; height: 40px; border: 3px solid #eee;
+            border-top: 3px solid #000; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
+    <div id="app-loader">
+        <div class="loader-spin"></div>
+        <p style="margin-top: 15px; font-family: Inter, sans-serif; letter-spacing: 2px; font-size: 12px; color: #999;">LOADING ANEEQ</p>
+    </div>
+
     <!-- Navigation Bar -->
     <header class="navbar">
         <div class="max-content flex-nav">

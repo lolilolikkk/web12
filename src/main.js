@@ -1,14 +1,49 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth();
+let db, auth;
 
-// Try sign in anonymously
-signInAnonymously(auth).catch(e => console.warn("Anon Auth disabled:", e.message));
+// ASYNC INITIALIZATION
+async function startApp() {
+    try {
+        // We fetch the config instead of importing it to be more portable
+        const configResponse = await fetch('firebase-applet-config.json');
+        if (!configResponse.ok) throw new Error("Config not found");
+        const firebaseConfig = await configResponse.json();
+
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+        auth = getAuth();
+
+        // Sign in anonymously
+        await signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
+        
+        console.log("Firebase initialized successfully.");
+        
+        // Hide loader
+        const loader = document.getElementById('app-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.classList.add('hidden'), 500);
+        }
+
+        // Initialize App Views
+        initMarketplace();
+    } catch (e) {
+        console.error("Initialization Failed:", e);
+        const loader = document.getElementById('app-loader');
+        if (loader) {
+            loader.innerHTML = `<div style="text-align:center; padding: 20px;">
+                <p style="color:red; font-weight:bold;">CONNECTION ERROR</p>
+                <p style="font-size:12px; color:#666; margin-top:10px;">Please ensure Firebase is set up and config is present.</p>
+                <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border:1px solid #000; cursor:pointer;">Retry</button>
+            </div>`;
+        }
+    }
+}
+
+startApp();
 
 const OperationType = {
   CREATE: 'create',
@@ -34,6 +69,7 @@ function handleFirestoreError(error, operationType, path) {
 
 // Connection check
 async function testConnection() {
+  if (!db) return;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
@@ -456,6 +492,7 @@ function filterByCategory(cat) {
 }
 
 function renderProductFeed() {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     const feedContainer = document.getElementById('marketplace-feed');
     if(!feedContainer) return;
@@ -528,6 +565,7 @@ function openShop(shopId) {
 }
 
 function renderProducts(shopId) {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('shop-products-container');
     
@@ -584,6 +622,7 @@ function closeModal() {
 }
 
 async function submitOrder() {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('customer-phone').value;
     if(!phone) return alert(currentLang === 'ar' ? "يرجى إدخال رقم الهاتف" : "Please enter phone");
@@ -650,6 +689,7 @@ function handleSellerLogin() {
 }
 
 function renderAdminInventory() {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     const list = document.getElementById('admin-inventory-list');
     
@@ -693,6 +733,7 @@ function previewProductImage(input) {
 }
 
 async function addNewProduct() {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     const name = document.getElementById('p-name').value;
     const cat = document.getElementById('p-cat').value;
@@ -741,6 +782,7 @@ function logout() {
 
 // TRACK ORDER (CUSTOMER)
 function handleTrackOrder() {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('track-phone').value;
     if(!phone) return;
@@ -815,6 +857,7 @@ function handleMasterLogin() {
 }
 
 function renderMasterOrders() {
+    if (!db) return;
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('master-orders-list');
     
