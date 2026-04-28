@@ -1,49 +1,33 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'firebase/firestore';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
 
-let db, auth;
+const firebaseConfig = {
+  "projectId": "gen-lang-client-0293781004",
+  "appId": "1:1002839908496:web:52aa50ad60d3aa92603815",
+  "apiKey": "AIzaSyB_mOuYbRx3IHAduhIXChdXmfPM_9R4ppo",
+  "authDomain": "gen-lang-client-0293781004.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-1243ade3-2460-42a3-a0ef-abfd1118c9d3",
+  "storageBucket": "gen-lang-client-0293781004.firebasestorage.app",
+  "messagingSenderId": "1002839908496",
+  "measurementId": ""
+};
 
-// ASYNC INITIALIZATION
-async function startApp() {
-    try {
-        // We fetch the config instead of importing it to be more portable
-        const configResponse = await fetch('firebase-applet-config.json');
-        if (!configResponse.ok) throw new Error("Config not found");
-        const firebaseConfig = await configResponse.json();
+// INITIALIZATION
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const auth = getAuth();
 
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-        auth = getAuth();
+// Sign in anonymously
+signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
 
-        // Sign in anonymously
-        await signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
-        
-        console.log("Firebase initialized successfully.");
-        
-        // Hide loader
-        const loader = document.getElementById('app-loader');
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.classList.add('hidden'), 500);
-        }
-
-        // Initialize App Views
-        initMarketplace();
-    } catch (e) {
-        console.error("Initialization Failed:", e);
-        const loader = document.getElementById('app-loader');
-        if (loader) {
-            loader.innerHTML = `<div style="text-align:center; padding: 20px;">
-                <p style="color:red; font-weight:bold;">CONNECTION ERROR</p>
-                <p style="font-size:12px; color:#666; margin-top:10px;">Please ensure Firebase is set up and config is present.</p>
-                <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border:1px solid #000; cursor:pointer;">Retry</button>
-            </div>`;
-        }
-    }
+// Hide loader once JS is running
+const loader = document.getElementById('app-loader');
+if (loader) {
+    loader.style.opacity = '0';
+    setTimeout(() => loader.classList.add('hidden'), 500);
 }
 
-startApp();
 
 const OperationType = {
   CREATE: 'create',
