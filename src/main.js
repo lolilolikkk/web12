@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
 import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, setDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -28,7 +28,6 @@ if (loader) {
     setTimeout(() => loader.classList.add('hidden'), 500);
 }
 
-
 const OperationType = {
   CREATE: 'create',
   UPDATE: 'update',
@@ -50,19 +49,6 @@ function handleFirestoreError(error, operationType, path) {
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
 }
-
-// Connection check
-async function testConnection() {
-  if (!db) return;
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
 
 // DATA CONSTANTS
 const SHOPS = [
@@ -100,6 +86,9 @@ const MASTER_KEY = "aneeq_master_99";
 
 const TRANSLATIONS = {
     en: {
+        storeSettings: "Store Settings",
+        storeHero: "Store Header Image",
+        saveStore: "Update Store Front",
         marketplace: "Marketplace",
         trackOrder: "Track Order",
         sellerPortal: "Seller Portal",
@@ -151,7 +140,8 @@ const TRANSLATIONS = {
         noProducts: "No products yet.",
         noItemsMarket: "No items in the marketplace yet.",
         buyNow: "Buy Now",
-        backToMarket: "← Back to Marketplace",
+        backToMarket: "Back to Marketplace",
+        backToHome: "Back to Home",
         phonePlaceholder: "07XX XXX XXXX",
         noOrdersFound: "No orders found for this number.",
         waitMaster: "Wait for the Master to review your request.",
@@ -175,6 +165,9 @@ const TRANSLATIONS = {
         phLabel: "PH:",
     },
     ar: {
+        storeSettings: "إعدادات المتجر",
+        storeHero: "صورة غلاف المتجر",
+        saveStore: "تحديث واجهة المتجر",
         marketplace: "المتجر",
         trackOrder: "تتبع الطلب",
         sellerPortal: "بوابة البائع",
@@ -226,7 +219,8 @@ const TRANSLATIONS = {
         noProducts: "لا توجد منتجات بعد.",
         noItemsMarket: "لا توجد عناصر في المتجر بعد.",
         buyNow: "اشترِ الآن",
-        backToMarket: "← العودة إلى المتجر",
+        backToMarket: "العودة للمتجر",
+        backToHome: "العودة للرئيسية",
         phonePlaceholder: "07XX XXX XXXX",
         noOrdersFound: "لم يتم العثور على طلبات لهذا الرقم.",
         waitMaster: "يرجى انتظار مراجعة الماستر لطلبك.",
@@ -254,14 +248,40 @@ const TRANSLATIONS = {
 // STATE
 let currentView = "home";
 let activeShop = null;
-let loggedInShopId = null;
+let loggedInShopId = localStorage.getItem('aneeq_seller_id');
+let isMasterLoggedIn = localStorage.getItem('aneeq_master_session') === 'true';
 let currentProductToBuy = null;
 let currentLang = localStorage.getItem('aneeq_lang') || 'en';
 let currentCategory = 'all';
 
 // INIT
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Initialize real-time settings listener
+    initSettingsListener();
+    
+    // 2. Set language
     setLanguage(currentLang);
+    
+    // 3. Recovery of states
+    if (loggedInShopId) {
+        const id = loggedInShopId; 
+        const shop = SHOPS.find(s => s.id === id);
+        if (shop) {
+            document.getElementById('admin-login').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            // Name will be updated by initSettingsListener when it fires
+            renderAdminInventory();
+        } else {
+            loggedInShopId = null;
+            localStorage.removeItem('aneeq_seller_id');
+        }
+    }
+
+    if (isMasterLoggedIn) {
+        document.getElementById('master-login').classList.add('hidden');
+        document.getElementById('master-dashboard').classList.remove('hidden');
+        renderMasterOrders();
+    }
     
     // Check URL hash on load
     const hash = window.location.hash.substring(1);
@@ -364,7 +384,22 @@ function updateStaticTranslations() {
     const adminDashboard = document.getElementById('admin-dashboard');
     if(adminDashboard) {
         adminDashboard.querySelector('.btn-outline').innerText = t.logout;
-        adminDashboard.querySelectorAll('.cardi h3')[0].innerText = t.addNewProduct;
+        
+        const settingsCard = adminDashboard.querySelector('.admin-settings-card');
+        if(settingsCard) {
+            settingsCard.querySelector('h3').innerText = t.storeSettings;
+            settingsCard.querySelectorAll('label')[0].innerText = currentLang === 'ar' ? 'اسم المتجر' : 'Store Display Name';
+            settingsCard.querySelector('#store-name-input').placeholder = currentLang === 'ar' ? 'أدخل اسم المتجر' : 'Enter Store Name';
+            settingsCard.querySelector('.upload-text').innerText = t.storeHero;
+            settingsCard.querySelector('button').innerText = t.saveStore;
+
+            // Pre-fill current name from memory or SHOPS
+            const shop = SHOPS.find(s => s.id === loggedInShopId);
+            const currentName = shopSettingsOverrides[loggedInShopId]?.name || shop?.name || "";
+            document.getElementById('store-name-input').value = currentName;
+        }
+
+        adminDashboard.querySelectorAll('.cardi h3')[1].innerText = t.addNewProduct;
         document.getElementById('p-name').placeholder = t.productName;
         document.getElementById('p-cat').placeholder = t.category;
         document.getElementById('p-price').placeholder = t.price;
@@ -442,25 +477,68 @@ function showView(viewId) {
     window.scrollTo(0,0);
 }
 
-// MARKETPLACE
+// UTILITIES
+const shopSettingsOverrides = {};
+
+function initSettingsListener() {
+    if (!db) return;
+    onSnapshot(collection(db, "shop_settings"), (snapshot) => {
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.shopId) {
+                shopSettingsOverrides[data.shopId] = data;
+            }
+        });
+        
+        // Update UI dynamically
+        if (loggedInShopId) {
+            const shop = SHOPS.find(s => s.id === loggedInShopId);
+            const displayName = shopSettingsOverrides[loggedInShopId]?.name || shop?.name;
+            const el = document.getElementById('admin-store-name');
+            if (el) el.innerText = displayName;
+        }
+
+        if (currentView === 'marketplace') {
+            initMarketplace();
+        }
+
+        if (currentView === 'shop' && activeShop) {
+            const heroImage = shopSettingsOverrides[activeShop.id]?.hero || activeShop.hero;
+            const shopName = shopSettingsOverrides[activeShop.id]?.name || activeShop.name;
+            const heroEl = document.querySelector('#view-shop .hero');
+            if (heroEl) {
+                heroEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${heroImage}')`;
+                const h1 = heroEl.querySelector('h1');
+                if (h1) h1.innerText = shopName;
+            }
+        }
+    });
+}
+
 function initMarketplace() {
     const list = document.getElementById('shops-list');
-    list.innerHTML = SHOPS.map(shop => `
-        <div class="shop-card" onclick="openShop('${shop.id}')">
-            <div class="shop-frame">
-                <div class="shop-img-wrapper">
-                    <img src="${shop.hero}" alt="${shop.name}">
-                </div>
-                <div class="shop-card-content">
-                    <img src="${shop.logo}" class="shop-logo" alt="${shop.name} logo">
-                    <div class="shop-info">
-                        <h3>${shop.name}</h3>
-                        <div class="shop-hint">${currentLang === 'ar' ? 'عرض المتجر' : 'Visit Shop'}</div>
+    if (!list) return;
+
+    list.innerHTML = SHOPS.map(shop => {
+        const heroImage = shopSettingsOverrides[shop.id]?.hero || shop.hero;
+        const shopName = shopSettingsOverrides[shop.id]?.name || shop.name;
+        return `
+            <div class="shop-card" onclick="openShop('${shop.id}')">
+                <div class="shop-frame">
+                    <div class="shop-img-wrapper">
+                        <img src="${heroImage}" alt="${shopName}">
+                    </div>
+                    <div class="shop-card-content">
+                        <img src="${shop.logo}" class="shop-logo" alt="${shopName} logo">
+                        <div class="shop-info">
+                            <h3>${shopName}</h3>
+                            <div class="shop-hint">${currentLang === 'ar' ? 'عرض المتجر' : 'Visit Shop'}</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function filterByCategory(cat) {
@@ -468,29 +546,33 @@ function filterByCategory(cat) {
     // Update active button
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
-        if(btn.innerText.toLowerCase() === (cat === 'all' ? 'all' : cat.toLowerCase())) {
+        if(btn.dataset.category === cat) {
             btn.classList.add('active');
         }
     });
     renderProductFeed();
 }
 
+let productFeedUnsubscribe = null;
+
 function renderProductFeed() {
     if (!db) return;
+    if (productFeedUnsubscribe) productFeedUnsubscribe();
     const t = TRANSLATIONS[currentLang];
     const feedContainer = document.getElementById('marketplace-feed');
     if(!feedContainer) return;
 
     // Use onSnapshot for real-time updates
     const q = query(collection(db, "inventory"));
-    onSnapshot(q, (snapshot) => {
+    productFeedUnsubscribe = onSnapshot(q, (snapshot) => {
         let allProducts = [];
         snapshot.forEach(doc => {
             const p = { ...doc.data(), id: doc.id };
             if(currentCategory === 'all' || p.category === currentCategory) {
                 const shop = SHOPS.find(s => s.id === p.shopId);
                 if(shop) {
-                    allProducts.push({ ...p, shopName: shop.name });
+                    const shopName = shopSettingsOverrides[p.shopId]?.name || shop.name;
+                    allProducts.push({ ...p, shopName: shopName });
                 }
             }
         });
@@ -539,26 +621,38 @@ function openShop(shopId) {
     activeShop = shop;
     showView('shop');
     
+    const heroImage = shopSettingsOverrides[shopId]?.hero || shop.hero;
+    const shopName = shopSettingsOverrides[shopId]?.name || shop.name;
+    
     document.getElementById('shop-header-container').innerHTML = `
-        <div class="hero" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${shop.hero}') center/cover; color: white;">
-            <h1>${shop.name}</h1>
+        <div class="hero" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${heroImage}') center/cover; color: white;">
+            <h1>${shopName}</h1>
         </div>
     `;
     
     renderProducts(shopId);
 }
 
+let shopProductsUnsubscribe = null;
+
 function renderProducts(shopId) {
     if (!db) return;
+    if (shopProductsUnsubscribe) shopProductsUnsubscribe();
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('shop-products-container');
     
     // Back to Market text
-    const backBtn = document.querySelector('#view-shop .back-nav button');
-    if(backBtn) backBtn.innerText = t.backToMarket;
+    const backBtnText = document.querySelector('#view-shop .btn-back span');
+    if(backBtnText) backBtnText.innerText = t.backToMarket;
+
+    // Marketplace and Track back buttons
+    const mBack = document.querySelector('#view-marketplace .btn-back span');
+    if(mBack) mBack.innerText = t.backToHome;
+    const tBack = document.querySelector('#view-track .btn-back span');
+    if(tBack) tBack.innerText = t.backToHome;
 
     const q = query(collection(db, "inventory"), where("shopId", "==", shopId));
-    onSnapshot(q, (snapshot) => {
+    shopProductsUnsubscribe = onSnapshot(q, (snapshot) => {
         let shopProducts = [];
         snapshot.forEach(doc => shopProducts.push({ ...doc.data(), id: doc.id }));
 
@@ -623,10 +717,11 @@ async function submitOrder() {
         }
     }
     
+    const shopName = shopSettingsOverrides[activeShop.id]?.name || activeShop.name;
     const orderData = {
         productName: currentProductToBuy.name,
         price: Number(currentProductToBuy.price),
-        shopName: activeShop.name,
+        shopName: shopName,
         phone: phone,
         time: new Date().toLocaleString(),
         status: 'pending',
@@ -663,22 +758,28 @@ function handleSellerLogin() {
     
     if(shop.pass === pass) {
         loggedInShopId = id;
+        localStorage.setItem('aneeq_seller_id', id);
+        const displayName = shopSettingsOverrides[id]?.name || shop.name;
         document.getElementById('admin-login').classList.add('hidden');
         document.getElementById('admin-dashboard').classList.remove('hidden');
-        document.getElementById('admin-store-name').innerText = shop.name;
+        document.getElementById('admin-store-name').innerText = displayName;
+        updateStaticTranslations(); // Update text fields like the name input
         renderAdminInventory();
     } else {
         alert(t.wrongKey);
     }
 }
 
+let adminInventoryUnsubscribe = null;
+
 function renderAdminInventory() {
     if (!db) return;
+    if (adminInventoryUnsubscribe) adminInventoryUnsubscribe();
     const t = TRANSLATIONS[currentLang];
     const list = document.getElementById('admin-inventory-list');
     
     const q = query(collection(db, "inventory"), where("shopId", "==", loggedInShopId));
-    onSnapshot(q, (snapshot) => {
+    adminInventoryUnsubscribe = onSnapshot(q, (snapshot) => {
         let products = [];
         snapshot.forEach(doc => products.push({ ...doc.data(), id: doc.id }));
 
@@ -697,16 +798,98 @@ function renderAdminInventory() {
     });
 }
 
-let currentBase64Image = null;
+// UTILITIES
+async function compressImage(base64Str, maxWidth = 1024, quality = 0.6) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-function previewProductImage(input) {
+            if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // Fill white background for JPEGs (transparency fix)
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            // Using image/jpeg for smaller file sizes compared to png
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(base64Str);
+    });
+}
+
+let currentBase64Image = null;
+let currentStoreBase64 = null;
+
+async function previewStoreImage(input) {
+    const preview = document.getElementById('store-settings-preview');
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const compressed = await compressImage(e.target.result, 1200, 0.6);
+            currentStoreBase64 = compressed;
+            preview.innerHTML = `<img src="${currentStoreBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+async function saveStoreSettings() {
+    const newName = document.getElementById('store-name-input').value.trim();
+    if (!loggedInShopId) return;
+
+    const btn = document.querySelector('.admin-settings-card .btn-primary');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = currentLang === 'ar' ? 'جاري الحفظ...' : 'Saving...';
+
+    const updateData = {
+        shopId: loggedInShopId,
+        updatedAt: serverTimestamp()
+    };
+    if (newName) updateData.name = newName;
+    if (currentStoreBase64) updateData.hero = currentStoreBase64;
+
+    try {
+        await setDoc(doc(db, "shop_settings", loggedInShopId), updateData, { merge: true });
+        
+        // No reload needed! The real-time listener (initSettingsListener) updates the UI automatically
+        alert(currentLang === 'ar' ? 'تم تحديث الإعدادات!' : "Store settings updated!");
+        
+        // Clear preview
+        if (currentStoreBase64) {
+            currentStoreBase64 = null;
+            document.getElementById('store-settings-preview').innerHTML = '';
+        }
+    } catch (e) {
+        handleFirestoreError(e, 'WRITE', 'shop_settings');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
+}
+
+async function previewProductImage(input) {
     const preview = document.getElementById('product-preview');
     const file = input.files[0];
     
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-            currentBase64Image = e.target.result;
+        reader.onload = async function(e) {
+            const compressed = await compressImage(e.target.result, 800, 0.7);
+            currentBase64Image = compressed;
             preview.innerHTML = `<img src="${currentBase64Image}" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border: 2px solid #000; margin-top: 10px;">`;
         };
         reader.readAsDataURL(file);
@@ -759,14 +942,26 @@ async function deleteProduct(productId) {
 
 function logout() {
     loggedInShopId = null;
+    localStorage.removeItem('aneeq_seller_id');
     document.getElementById('admin-login').classList.remove('hidden');
     document.getElementById('admin-dashboard').classList.add('hidden');
     document.getElementById('admin-pass').value = '';
 }
 
+function masterLogout() {
+    isMasterLoggedIn = false;
+    localStorage.removeItem('aneeq_master_session');
+    document.getElementById('master-login').classList.remove('hidden');
+    document.getElementById('master-dashboard').classList.add('hidden');
+    document.getElementById('master-pass').value = '';
+}
+
+let trackOrdersUnsubscribe = null;
+
 // TRACK ORDER (CUSTOMER)
 function handleTrackOrder() {
     if (!db) return;
+    if (trackOrdersUnsubscribe) trackOrdersUnsubscribe();
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('track-phone').value;
     if(!phone) return;
@@ -786,7 +981,7 @@ function handleTrackOrder() {
     resultsDiv.classList.remove('hidden');
 
     const q = query(collection(db, "orders"), where("phone", "==", phone));
-    onSnapshot(q, (snapshot) => {
+    trackOrdersUnsubscribe = onSnapshot(q, (snapshot) => {
         let customerOrders = [];
         snapshot.forEach(doc => customerOrders.push({ ...doc.data(), id: doc.id }));
 
@@ -832,6 +1027,8 @@ function handleMasterLogin() {
     const t = TRANSLATIONS[currentLang];
     const pass = document.getElementById('master-pass').value;
     if(pass === MASTER_KEY) {
+        isMasterLoggedIn = true;
+        localStorage.setItem('aneeq_master_session', 'true');
         document.getElementById('master-login').classList.add('hidden');
         document.getElementById('master-dashboard').classList.remove('hidden');
         renderMasterOrders();
@@ -840,14 +1037,17 @@ function handleMasterLogin() {
     }
 }
 
+let masterOrdersUnsubscribe = null;
+
 function renderMasterOrders() {
     if (!db) return;
+    if (masterOrdersUnsubscribe) masterOrdersUnsubscribe();
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('master-orders-list');
     
     // Real-time listener for master
     const q = query(collection(db, "orders"));
-    onSnapshot(q, (snapshot) => {
+    masterOrdersUnsubscribe = onSnapshot(q, (snapshot) => {
         let orders = [];
         snapshot.forEach(doc => orders.push({ ...doc.data(), id: doc.id }));
 
@@ -937,9 +1137,12 @@ window.deleteProduct = deleteProduct;
 window.logout = logout;
 window.handleTrackOrder = handleTrackOrder;
 window.handleMasterLogin = handleMasterLogin;
+window.masterLogout = masterLogout;
 window.updateOrderStatus = updateOrderStatus;
 window.deleteOrderByID = deleteOrderByID;
 window.setLanguage = setLanguage;
 window.filterByCategory = filterByCategory;
 window.previewProductImage = previewProductImage;
+window.previewStoreImage = previewStoreImage;
+window.saveStoreSettings = saveStoreSettings;
 
