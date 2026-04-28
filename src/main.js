@@ -54,7 +54,15 @@ function handleFirestoreError(error, operationType, path) {
 
 // Connection check
 async function testConnection() {
-  while (!db) await new Promise(r => setTimeout(r, 100));
+  let attempts = 0;
+  while (!db && attempts < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+  if (!db) {
+    console.error("Firebase DB not initialized in time.");
+    return;
+  }
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
@@ -484,6 +492,10 @@ function filterByCategory(cat) {
 }
 
 function renderProductFeed() {
+    if (!db) {
+        setTimeout(renderProductFeed, 500);
+        return;
+    }
     const t = TRANSLATIONS[currentLang];
     const feedContainer = document.getElementById('marketplace-feed');
     if(!feedContainer) return;
@@ -556,6 +568,10 @@ function openShop(shopId) {
 }
 
 function renderProducts(shopId) {
+    if (!db) {
+        setTimeout(() => renderProducts(shopId), 500);
+        return;
+    }
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('shop-products-container');
     
@@ -678,6 +694,10 @@ function handleSellerLogin() {
 }
 
 function renderAdminInventory() {
+    if (!db) {
+        setTimeout(renderAdminInventory, 500);
+        return;
+    }
     const t = TRANSLATIONS[currentLang];
     const list = document.getElementById('admin-inventory-list');
     
@@ -769,6 +789,10 @@ function logout() {
 
 // TRACK ORDER (CUSTOMER)
 function handleTrackOrder() {
+    if (!db) {
+        setTimeout(handleTrackOrder, 500);
+        return;
+    }
     const t = TRANSLATIONS[currentLang];
     let phone = document.getElementById('track-phone').value;
     if(!phone) return;
@@ -843,6 +867,10 @@ function handleMasterLogin() {
 }
 
 function renderMasterOrders() {
+    if (!db) {
+        setTimeout(renderMasterOrders, 500);
+        return;
+    }
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('master-orders-list');
     
