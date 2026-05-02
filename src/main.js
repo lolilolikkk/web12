@@ -1,6 +1,6 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, initializeFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 console.log("Aneeq: main.js execution started at " + new Date().toISOString());
 
@@ -14,33 +14,6 @@ window.addEventListener('error', (event) => {
         setTimeout(() => toast.classList.add('hidden'), 5000);
     }
 });
-
-// Global Exports - Define early for HTML onclick availability
-window.toggleAuthMode = (...args) => toggleAuthMode(...args);
-window.handleBasketAutoTrack = (...args) => handleBasketAutoTrack(...args);
-window.handleLogin = (...args) => handleLogin(...args);
-window.handleRegister = (...args) => handleRegister(...args);
-window.saveProfileLocation = (...args) => saveProfileLocation(...args);
-window.logout = (...args) => logout(...args);
-window.showView = (...args) => showView(...args);
-window.openShop = (...args) => openShop(...args);
-window.buyFromFeed = (...args) => buyFromFeed(...args);
-window.openBuyModal = (...args) => openBuyModal(...args);
-window.closeModal = (...args) => closeModal(...args);
-window.submitOrder = (...args) => submitOrder(...args);
-window.handleSellerLogin = (...args) => handleSellerLogin(...args);
-window.addNewProduct = (...args) => addNewProduct(...args);
-window.deleteProduct = (...args) => deleteProduct(...args);
-window.handleTrackOrder = (...args) => handleBasketAutoTrack(...args);
-window.handleMasterLogin = (...args) => handleMasterLogin(...args);
-window.masterLogout = (...args) => masterLogout(...args);
-window.updateOrderStatus = (...args) => updateOrderStatus(...args);
-window.deleteOrderByID = (...args) => deleteOrderByID(...args);
-window.setLanguage = (...args) => setLanguage(...args);
-window.filterByCategory = (...args) => filterByCategory(...args);
-window.previewProductImage = (...args) => previewProductImage(...args);
-window.previewStoreImage = (...args) => previewStoreImage(...args);
-window.saveStoreSettings = (...args) => saveStoreSettings(...args);
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -65,15 +38,25 @@ const hideLoader = () => {
 let app, db, auth;
 try {
     app = initializeApp(firebaseConfig);
-    db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-    auth = getAuth();
+    // Use initializeFirestore for better compatibility with custom database IDs
+    db = initializeFirestore(app, {
+        databaseId: firebaseConfig.firestoreDatabaseId || "(default)"
+    });
+    auth = getAuth(app);
 } catch (e) {
-    console.error("Firebase Init Error:", e);
+    console.error("Aneeq: Firebase Init Error:", e);
     const loaderText = document.querySelector('#app-loader p');
     if (loaderText) loaderText.innerText = "Error initializing system. Please check your connection.";
 }
 
 let isAuthReady = false;
+
+// Real-time listener unsubscribers
+let productFeedUnsubscribe = null;
+let shopProductsUnsubscribe = null;
+let adminInventoryUnsubscribe = null;
+let masterOrdersUnsubscribe = null;
+let trackOrdersUnsubscribe = null;
 
 // Sign in anonymously
 if (auth) {
@@ -356,7 +339,6 @@ try {
     console.error("Error parsing loggedInUser from localStorage:", e);
     localStorage.removeItem('aneeq_user');
 }
-let trackOrdersUnsubscribe = null;
 let isMasterLoggedIn = localStorage.getItem('aneeq_master_session') === 'true';
 let currentProductToBuy = null;
 let currentLang = localStorage.getItem('aneeq_lang') || 'en';
@@ -364,8 +346,10 @@ let currentCategory = 'all';
 const shopSettingsOverrides = {};
 
 // INIT
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log("DOM Content Loaded. Initializing app...");
+const init = async () => {
+    if (window.aneeqInitialized) return;
+    window.aneeqInitialized = true;
+    console.log("Aneeq: Initializing app logic...");
     try {
         // 1. Initialize real-time settings listener
         initSettingsListener();
@@ -392,7 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (isMasterLoggedIn) {
-            console.log("Master is logged in, showing dashboard");
+            console.log("Aneeq: Master is logged in, showing dashboard");
             const masterLogin = document.getElementById('master-login');
             const masterDashboard = document.getElementById('master-dashboard');
             if (masterLogin) masterLogin.classList.add('hidden');
@@ -413,12 +397,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             setupAdminSelect();
         }
     } catch (e) {
-        console.error("Error during app initialization:", e);
+        console.error("Aneeq: Error during app initialization:", e);
     } finally {
         // Ensure loader is hidden even if init has issues
         setTimeout(hideLoader, 1000);
     }
-});
+};
 
 // LANGUAGE
 function setLanguage(lang) {
@@ -794,8 +778,6 @@ function filterByCategory(cat) {
     renderProductFeed();
 }
 
-let productFeedUnsubscribe = null;
-
 function renderProductFeed() {
     if (!db) return;
     if (productFeedUnsubscribe) productFeedUnsubscribe();
@@ -873,8 +855,6 @@ function openShop(shopId) {
     
     renderProducts(shopId);
 }
-
-let shopProductsUnsubscribe = null;
 
 function renderProducts(shopId) {
     if (!db) return;
@@ -1263,8 +1243,6 @@ function logout() {
     document.getElementById('login-pass').value = '';
 }
 
-let adminInventoryUnsubscribe = null;
-
 function renderAdminInventory() {
     if (!db) return;
     if (adminInventoryUnsubscribe) adminInventoryUnsubscribe();
@@ -1295,7 +1273,6 @@ function renderAdminInventory() {
 async function compressImage(base64Str, maxWidth = 1024, quality = 0.6) {
     return new Promise((resolve) => {
         const img = new Image();
-        img.src = base64Str;
         img.onload = () => {
             const canvas = document.createElement('canvas');
             let width = img.width;
@@ -1319,6 +1296,7 @@ async function compressImage(base64Str, maxWidth = 1024, quality = 0.6) {
             resolve(canvas.toDataURL('image/jpeg', quality));
         };
         img.onerror = () => resolve(base64Str);
+        img.src = base64Str;
     });
 }
 
@@ -1512,7 +1490,6 @@ function handleMasterLogin() {
     }
 }
 
-let masterOrdersUnsubscribe = null;
 function renderMasterOrders() {
     if (!db) return;
     if (masterOrdersUnsubscribe) masterOrdersUnsubscribe();
@@ -1587,5 +1564,37 @@ async function deleteOrderByID(orderId) {
 }
 
 // Global Exports - For direct access from HTML onclick
-// Assignments moved to top for availability
+window.toggleAuthMode = toggleAuthMode;
+window.handleBasketAutoTrack = handleBasketAutoTrack;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.saveProfileLocation = saveProfileLocation;
+window.logout = logout;
+window.showView = showView;
+window.openShop = openShop;
+window.buyFromFeed = buyFromFeed;
+window.openBuyModal = openBuyModal;
+window.closeModal = closeModal;
+window.submitOrder = submitOrder;
+window.handleSellerLogin = handleSellerLogin;
+window.addNewProduct = addNewProduct;
+window.deleteProduct = deleteProduct;
+window.handleTrackOrder = handleBasketAutoTrack;
+window.handleMasterLogin = handleMasterLogin;
+window.masterLogout = masterLogout;
+window.updateOrderStatus = updateOrderStatus;
+window.deleteOrderByID = deleteOrderByID;
+window.setLanguage = setLanguage;
+window.filterByCategory = filterByCategory;
+window.previewProductImage = previewProductImage;
+window.previewStoreImage = previewStoreImage;
+window.saveStoreSettings = saveStoreSettings;
+
+console.log("Aneeq: main.js initialization complete.");
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
