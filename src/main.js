@@ -2,6 +2,17 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'firebase/firestore';
 
+// Added global error handler for debugging
+window.addEventListener('error', (event) => {
+    console.error("Global Error Caught:", event.error || event.message);
+    const toast = document.getElementById('toast');
+    if (toast) {
+        toast.innerText = "System Error: " + (event.error?.message || event.message);
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 5000);
+    }
+});
+
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
   "appId": "1:1002839908496:web:52aa50ad60d3aa92603815",
@@ -34,6 +45,33 @@ try {
 }
 
 let isAuthReady = false;
+
+// Global Exports - For direct access from HTML onclick
+window.toggleAuthMode = toggleAuthMode;
+window.handleBasketAutoTrack = handleBasketAutoTrack;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.saveProfileLocation = saveProfileLocation;
+window.logout = logout;
+window.showView = showView;
+window.openShop = openShop;
+window.buyFromFeed = buyFromFeed;
+window.openBuyModal = openBuyModal;
+window.closeModal = closeModal;
+window.submitOrder = submitOrder;
+window.handleSellerLogin = handleSellerLogin;
+window.addNewProduct = addNewProduct;
+window.deleteProduct = deleteProduct;
+window.handleTrackOrder = handleBasketAutoTrack;
+window.handleMasterLogin = handleMasterLogin;
+window.masterLogout = masterLogout;
+window.updateOrderStatus = updateOrderStatus;
+window.deleteOrderByID = deleteOrderByID;
+window.setLanguage = setLanguage;
+window.filterByCategory = filterByCategory;
+window.previewProductImage = previewProductImage;
+window.previewStoreImage = previewStoreImage;
+window.saveStoreSettings = saveStoreSettings;
 
 // Sign in anonymously
 if (auth) {
@@ -1004,7 +1042,7 @@ function toggleAuthMode(mode) {
 async function handleRegister() {
     console.log("handleRegister started");
     if (!db) {
-        console.error("Database not initialized");
+        alert("System error: Database not connected. Please refresh.");
         return;
     }
     
@@ -1068,7 +1106,10 @@ async function handleRegister() {
 
 async function handleLogin() {
     console.log("handleLogin started");
-    if (!db) return;
+    if (!db) {
+        alert("System error: Database not connected. Please refresh.");
+        return;
+    }
     
     // Non-blocking log
     console.log("Auth ready during login:", isAuthReady);
@@ -1219,33 +1260,6 @@ function logout() {
     document.getElementById('login-phone').value = '';
     document.getElementById('login-pass').value = '';
 }
-
-// Global Exports
-window.toggleAuthMode = toggleAuthMode;
-window.handleBasketAutoTrack = handleBasketAutoTrack;
-window.handleLogin = handleLogin;
-window.handleRegister = handleRegister;
-window.saveProfileLocation = saveProfileLocation;
-window.logout = logout;
-window.showView = showView;
-window.openShop = openShop;
-window.buyFromFeed = buyFromFeed;
-window.openBuyModal = openBuyModal;
-window.closeModal = closeModal;
-window.submitOrder = submitOrder;
-window.handleSellerLogin = handleSellerLogin;
-window.addNewProduct = addNewProduct;
-window.deleteProduct = deleteProduct;
-window.handleTrackOrder = handleBasketAutoTrack;
-window.handleMasterLogin = handleMasterLogin;
-window.masterLogout = masterLogout;
-window.updateOrderStatus = updateOrderStatus;
-window.deleteOrderByID = deleteOrderByID;
-window.setLanguage = setLanguage;
-window.filterByCategory = filterByCategory;
-window.previewProductImage = previewProductImage;
-window.previewStoreImage = previewStoreImage;
-window.saveStoreSettings = saveStoreSettings;
 
 let adminInventoryUnsubscribe = null;
 
