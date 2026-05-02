@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
 import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, setDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -839,10 +839,15 @@ async function submitOrder() {
     }
 }
 
-function showToast() {
+function showToast(message) {
     const t = document.getElementById('toast');
+    if (message) t.innerText = message;
     t.classList.remove('hidden');
-    setTimeout(() => t.classList.add('hidden'), 3000);
+    setTimeout(() => {
+        t.classList.add('hidden');
+        // Reset to default message for other uses
+        setTimeout(() => { t.innerText = "Request Sent to Master!"; }, 500);
+    }, 4000);
 }
 
 // ACCOUNT & AUTH
@@ -874,18 +879,30 @@ function toggleAuthMode(mode) {
 }
 
 async function handleRegister() {
-    if (!db) return;
+    console.log("Register button clicked");
+    if (!db) {
+        console.error("Database not initialized");
+        return;
+    }
     const name = document.getElementById('reg-name').value.trim();
     const phoneInput = document.getElementById('reg-phone').value.trim();
     const pass = document.getElementById('reg-pass').value.trim();
     
-    if(!name || !phoneInput || !pass) return alert("Please fill all fields");
+    if(!name || !phoneInput || !pass) {
+        showToast(currentLang === 'ar' ? 'يرجى ملء جميع الحقول' : "Please fill all fields");
+        return;
+    }
     
     let phone = normalizePhone(phoneInput);
+    console.log("Registering phone:", phone);
     
     try {
-        const userDoc = await getDocFromServer(doc(db, "users", phone));
-        if(userDoc.exists()) return alert("Phone number already registered.");
+        const userRef = doc(db, "users", phone);
+        const userDoc = await getDoc(userRef);
+        if(userDoc.exists()) {
+            showToast(currentLang === 'ar' ? 'رقم الهاتف مسجل بالفعل' : "Phone number already registered.");
+            return;
+        }
         
         const userData = {
             name,
@@ -895,11 +912,13 @@ async function handleRegister() {
             createdAt: serverTimestamp()
         };
         
-        await setDoc(doc(db, "users", phone), userData);
-        alert("Account created successfully! Please login.");
-        toggleAuthMode('login');
+        await setDoc(userRef, userData);
+        showToast(currentLang === 'ar' ? 'تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول' : "Account created successfully! Please login.");
+        setTimeout(() => toggleAuthMode('login'), 2000);
     } catch (e) {
-        handleFirestoreError(e, 'WRITE', 'users');
+        console.error("Registration error:", e);
+        handleFirestoreError(e, OperationType.WRITE, 'users');
+        showToast("Error: " + e.message);
     }
 }
 
@@ -908,12 +927,15 @@ async function handleLogin() {
     const phoneInput = document.getElementById('login-phone').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
     
-    if(!phoneInput || !pass) return alert("Please enter phone and password");
+    if(!phoneInput || !pass) {
+        showToast(currentLang === 'ar' ? 'يرجى إدخال الهاتف وكلمة المرور' : "Please enter phone and password");
+        return;
+    }
     
     let phone = normalizePhone(phoneInput);
     
     try {
-        const userDoc = await getDocFromServer(doc(db, "users", phone));
+        const userDoc = await getDoc(doc(db, "users", phone));
         if(userDoc.exists()) {
             const data = userDoc.data();
             if(data.password === pass) {
@@ -941,9 +963,10 @@ async function handleLogin() {
              return;
         }
 
-        alert("Invalid phone or password.");
+        showToast(currentLang === 'ar' ? 'هاتف أو كلمة مرور غير صالحة' : "Invalid phone or password.");
     } catch (e) {
-        handleFirestoreError(e, 'GET', 'users');
+        handleFirestoreError(e, OperationType.GET, 'users');
+        showToast("Login Error: " + e.message);
     }
 }
 
