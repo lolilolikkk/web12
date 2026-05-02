@@ -321,6 +321,7 @@ let isMasterLoggedIn = localStorage.getItem('aneeq_master_session') === 'true';
 let currentProductToBuy = null;
 let currentLang = localStorage.getItem('aneeq_lang') || 'en';
 let currentCategory = 'all';
+const shopSettingsOverrides = {};
 
 // INIT
 document.addEventListener('DOMContentLoaded', async () => {
@@ -351,6 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (isMasterLoggedIn) {
+            console.log("Master is logged in, showing dashboard");
             const masterLogin = document.getElementById('master-login');
             const masterDashboard = document.getElementById('master-dashboard');
             if (masterLogin) masterLogin.classList.add('hidden');
@@ -553,7 +555,7 @@ function updateStaticTranslations() {
             if (passInput) passInput.placeholder = t.storePasskey;
             if (btn) btn.innerText = t.enterDashboard;
         }
-        const adminDashboard = document.getElementById('admin-dashboard');
+        const adminDashboard = document.getElementById('seller-tools');
         if(adminDashboard) {
             const logoutBtn = adminDashboard.querySelector('.btn-outline');
             if (logoutBtn) logoutBtn.innerText = t.logout;
@@ -681,8 +683,6 @@ function showView(viewId) {
 }
 
 // UTILITIES
-const shopSettingsOverrides = {};
-
 function initSettingsListener() {
     if (!db) return;
     onSnapshot(collection(db, "shop_settings"), (snapshot) => {
@@ -846,11 +846,11 @@ function renderProducts(shopId) {
     const backBtnText = document.querySelector('#view-shop .btn-back span');
     if(backBtnText) backBtnText.innerText = t.backToMarket;
 
-    // Marketplace and Track back buttons
+    // Marketplace and basket back buttons
     const mBack = document.querySelector('#view-marketplace .btn-back span');
     if(mBack) mBack.innerText = t.backToHome;
-    const tBack = document.querySelector('#view-track .btn-back span');
-    if(tBack) tBack.innerText = t.backToHome;
+    const bBack = document.querySelector('#view-basket .btn-back span');
+    if(bBack) bBack.innerText = t.backToHome;
 
     const q = query(collection(db, "inventory"), where("shopId", "==", shopId));
     shopProductsUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -966,29 +966,38 @@ function showToast(message) {
 
 // ACCOUNT & AUTH
 function toggleAuthMode(mode) {
+    console.log("Toggling auth mode to:", mode);
     const loginTab = document.getElementById('tab-login');
     const regTab = document.getElementById('tab-register');
     const loginForm = document.getElementById('form-login');
     const regForm = document.getElementById('form-register');
     
     if(mode === 'login') {
-        loginTab.style.fontWeight = '700';
-        loginTab.style.borderBottom = '2px solid #000';
-        loginTab.style.color = '#000';
-        regTab.style.fontWeight = '400';
-        regTab.style.borderBottom = 'none';
-        regTab.style.color = '#999';
-        loginForm.classList.remove('hidden');
-        regForm.classList.add('hidden');
+        if (loginTab) {
+            loginTab.style.fontWeight = '700';
+            loginTab.style.borderBottom = '2px solid #000';
+            loginTab.style.color = '#000';
+        }
+        if (regTab) {
+            regTab.style.fontWeight = '400';
+            regTab.style.borderBottom = 'none';
+            regTab.style.color = '#999';
+        }
+        if (loginForm) loginForm.classList.remove('hidden');
+        if (regForm) regForm.classList.add('hidden');
     } else {
-        regTab.style.fontWeight = '700';
-        regTab.style.borderBottom = '2px solid #000';
-        regTab.style.color = '#000';
-        loginTab.style.fontWeight = '400';
-        loginTab.style.borderBottom = 'none';
-        loginTab.style.color = '#999';
-        regForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
+        if (regTab) {
+            regTab.style.fontWeight = '700';
+            regTab.style.borderBottom = '2px solid #000';
+            regTab.style.color = '#000';
+        }
+        if (loginTab) {
+            loginTab.style.fontWeight = '400';
+            loginTab.style.borderBottom = 'none';
+            loginTab.style.color = '#999';
+        }
+        if (regForm) regForm.classList.remove('hidden');
+        if (loginForm) loginForm.classList.add('hidden');
     }
 }
 
