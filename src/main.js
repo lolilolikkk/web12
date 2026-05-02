@@ -613,6 +613,8 @@ function initSettingsListener() {
                 if (h1) h1.innerText = shopName;
             }
         }
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, "shop_settings");
     });
 }
 
@@ -886,13 +888,14 @@ function toggleAuthMode(mode) {
 }
 
 async function handleRegister() {
-    console.log("Register button clicked");
+    console.log("handleRegister started");
     if (!db) {
         console.error("Database not initialized");
         return;
     }
     
     if (!isAuthReady) {
+        console.log("Auth not ready yet");
         showToast(currentLang === 'ar' ? 'جاري تهيئة النظام... حاول مرة أخرى' : "Initializing system... please try again in a few seconds.");
         return;
     }
@@ -912,12 +915,15 @@ async function handleRegister() {
         return;
     }
     
-    console.log("Registering phone:", phone);
+    console.log("Attempting to register user with phone:", phone);
     
     try {
         const userRef = doc(db, "users", phone);
+        console.log("Checking if user exists...");
         const userDoc = await getDoc(userRef);
+        
         if(userDoc.exists()) {
+            console.log("User already exists");
             showToast(currentLang === 'ar' ? 'رقم الهاتف مسجل بالفعل' : "Phone number already registered.");
             return;
         }
@@ -930,7 +936,9 @@ async function handleRegister() {
             createdAt: serverTimestamp()
         };
         
+        console.log("Creating user doc...");
         await setDoc(userRef, userData);
+        console.log("User registered successfully");
         showToast(currentLang === 'ar' ? 'تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول' : "Account created successfully! Please login.");
         
         // Reset fields
@@ -940,13 +948,14 @@ async function handleRegister() {
         
         setTimeout(() => toggleAuthMode('login'), 2000);
     } catch (e) {
-        console.error("Registration error:", e);
+        console.error("Critical registration error:", e);
         handleFirestoreError(e, OperationType.WRITE, 'users');
-        showToast("Error: " + e.message);
+        showToast("Error: " + (e.code || e.message));
     }
 }
 
 async function handleLogin() {
+    console.log("handleLogin started");
     if (!db) return;
     
     if (!isAuthReady) {
@@ -963,12 +972,14 @@ async function handleLogin() {
     }
     
     let phone = normalizePhone(phoneInput);
+    console.log("Attempting login for:", phone);
     
     try {
         const userDoc = await getDoc(doc(db, "users", phone));
         if(userDoc.exists()) {
             const data = userDoc.data();
             if(data.password === pass) {
+                console.log("Password match for user");
                 loggedInUser = data;
                 localStorage.setItem('aneeq_user', JSON.stringify(data));
                 
@@ -980,11 +991,16 @@ async function handleLogin() {
                 
                 loginSuccess();
                 return;
+            } else {
+                console.log("Password mismatch");
             }
+        } else {
+            console.log("User not found in Firestore users coll");
         }
         
         const legacyShop = SHOPS.find(s => s.pass === pass);
         if(legacyShop) {
+             console.log("Login matched legacy shop pass");
              loggedInUser = { name: legacyShop.name, phone: phone, location: "" };
              loggedInShopId = legacyShop.id;
              localStorage.setItem('aneeq_user', JSON.stringify(loggedInUser));
@@ -995,8 +1011,9 @@ async function handleLogin() {
 
         showToast(currentLang === 'ar' ? 'هاتف أو كلمة مرور غير صالحة' : "Invalid phone or password.");
     } catch (e) {
+        console.error("Critical login error:", e);
         handleFirestoreError(e, OperationType.GET, 'users');
-        showToast("Login Error: " + e.message);
+        showToast("Login Error: " + (e.code || e.message));
     }
 }
 
@@ -1058,9 +1075,10 @@ async function saveProfileLocation(silent = false) {
         await updateDoc(doc(db, "users", loggedInUser.phone), { location: loc });
         loggedInUser.location = loc;
         localStorage.setItem('aneeq_user', JSON.stringify(loggedInUser));
-        if(!silent) alert("Location updated!");
+        if(!silent) showToast(currentLang === 'ar' ? "تم تحديث الموقع!" : "Location updated!");
     } catch (e) {
-        handleFirestoreError(e, 'UPDATE', 'users');
+        handleFirestoreError(e, OperationType.UPDATE, 'users');
+        showToast("Error updating location");
     }
 }
 
@@ -1208,13 +1226,14 @@ async function saveStoreSettings() {
 
     try {
         await setDoc(doc(db, "shop_settings", loggedInShopId), updateData, { merge: true });
-        alert(currentLang === 'ar' ? 'تم تحديث الإعدادات!' : "Store settings updated!");
+        showToast(currentLang === 'ar' ? 'تم تحديث الإعدادات!' : "Store settings updated!");
         if (currentStoreBase64) {
             currentStoreBase64 = null;
             document.getElementById('store-settings-preview').innerHTML = '';
         }
     } catch (e) {
-        handleFirestoreError(e, 'WRITE', 'shop_settings');
+        handleFirestoreError(e, OperationType.WRITE, 'shop_settings');
+        showToast("Error saving settings");
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;
