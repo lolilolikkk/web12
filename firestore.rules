@@ -3,9 +3,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // PUBLIC ACCESS FOR TESTING (Permissive for 30 days)
     // IMPORTANT: Enable Anonymous Auth in Firebase Console for better security!
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
     match /inventory/{productId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
     }
 
     match /orders/{orderId} {

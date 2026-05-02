@@ -360,8 +360,8 @@ nav button:hover { color: var(--accent); }
 /* Shops Grid - Boutique Style */
 .grid-shops {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 40px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 30px;
     padding-bottom: 80px;
 }
 
@@ -377,15 +377,19 @@ nav button:hover { color: var(--accent); }
 }
 
 .shop-frame {
-    border: 4px solid #000;
-    border-radius: 40px;
-    padding: 12px;
+    border: 3px solid #000;
+    border-radius: 24px;
+    padding: 16px;
     background: #fff;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .shop-card:hover .shop-frame {
-    transform: translateY(-8px);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 .shop-img-wrapper {
@@ -407,17 +411,17 @@ nav button:hover { color: var(--accent); }
 }
 
 .shop-card-content {
-    padding: 16px 10px 8px;
     display: flex;
-    flex-direction: row;
-    gap: 15px;
+    flex-direction: column;
+    gap: 12px;
     align-items: center;
+    text-align: center;
 }
 
 .shop-logo {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
     margin-top: 0;
     object-fit: cover;
     border: 2px solid #000;
@@ -745,20 +749,51 @@ footer { text-align: center; padding: 40px; color: var(--muted); }
     .home-hero h1 { font-size: 42px; letter-spacing: -1.5px; }
     .home-hero p { font-size: 16px; }
     
-    .hero { padding: 60px 20px; border-radius: 24px; margin-bottom: 20px; }
-    .hero h1 { font-size: 36px; letter-spacing: -1px; }
+    .hero { padding: 40px 16px; border-radius: 24px; margin-bottom: 20px; }
+    .hero h1 { font-size: 32px; letter-spacing: -1px; }
     .hero p { font-size: 14px; }
     
     .feed-header { flex-direction: column; align-items: center; gap: 10px; text-align: center; margin-top: 20px; padding-top: 40px; }
-    .feed-header h2 { font-size: 32px; }
+    .feed-header h2 { font-size: 28px; }
     
-    .grid-shops { grid-template-columns: 1fr; gap: 20px; }
-    .products-grid { grid-template-columns: 1fr; gap: 20px; }
+    .grid-shops { 
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 10px; 
+    }
+    .products-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 10px; 
+    }
     
-    .shop-frame { padding: 8px; border-radius: 32px; }
-    .shop-card h3 { font-size: 18px; }
-    .shop-logo { width: 38px; height: 38px; }
-    .shop-card-content { gap: 12px; padding: 12px 6px; }
+    .shop-frame { 
+        padding: 12px 6px; 
+        border-radius: 20px; 
+        border-width: 2px;
+    }
+    .shop-card h3 { font-size: 13px; }
+    .shop-logo { width: 44px; height: 44px; border-width: 1.5px; border-radius: 10px; }
+    .shop-card-content { gap: 8px; }
+    .shop-card .shop-hint { font-size: 8px; }
+
+    .product-img-wrapper {
+        border-radius: 16px;
+        border-width: 1px;
+    }
+    .product-info { padding: 12px 4px; }
+    .product-info h3 { font-size: 14px; margin-bottom: 4px; }
+    .product-price { font-size: 16px; }
+    .btn-buy { 
+        padding: 10px; 
+        border-radius: 12px; 
+        font-size: 12px;
+        margin-top: 12px;
+    }
+    .badge-shop {
+        top: 10px;
+        left: 10px;
+        font-size: 8px;
+        padding: 4px 10px;
+    }
     
     .modal-content { width: 90%; padding: 30px 20px; }
     
@@ -770,8 +805,8 @@ footer { text-align: center; padding: 40px; color: var(--muted); }
     
     [dir="rtl"] nav button { margin: 0 10px; }
     
-    .filter-bar { padding: 0 20px 10px; margin-bottom: 20px; }
-    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-bar { padding: 0 16px 16px; margin-bottom: 12px; }
+    .filter-btn { padding: 8px 16px; font-size: 11px; }
 }
 
 /* File Upload Styles */

@@ -82,7 +82,7 @@ const SHOPS = [
     }
 ];
 
-const MASTER_KEY = "aneeq_master_99";
+const MASTER_KEY = "1111";
 
 const TRANSLATIONS = {
     en: {
@@ -97,7 +97,20 @@ const TRANSLATIONS = {
         heroIdentity: "Identity.",
         heroText: "Welcome to aneeq, the premium marketplace for independent creators and discerning collectors.",
         enterMarketplace: "Enter Marketplace",
-        trackMyOrder: "Track My Order",
+        basket: "Basket",
+        account: "Account",
+        login: "Login",
+        register: "Register",
+        fullName: "Full Name",
+        phone: "Phone Number",
+        password: "Password",
+        createAccount: "Create Account",
+        myProfile: "My Profile",
+        contactInfo: "Contact Info",
+        shippingLocation: "Shipping Location",
+        updateLocation: "Update Location",
+        enterLocation: "City, Neighborhood, Street No...",
+        deliveryHint: "Enter your delivery location. Our team will contact you.",
         curatedExcellence: "Curated Excellence",
         curatedText: "Every shop on our platform is hand-picked for quality and originality.",
         directConnect: "Direct Connect",
@@ -160,6 +173,10 @@ const TRANSLATIONS = {
         contactUs: "Contact Us",
         terms: "Terms of Service",
         footerText: "Redefining independent retail for the modern age.",
+        all: "All",
+        men: "Men",
+        women: "Women",
+        kids: "Kids",
         statusAccepted: "Accepted",
         statusRefused: "Refused",
         phLabel: "PH:",
@@ -176,7 +193,20 @@ const TRANSLATIONS = {
         heroIdentity: "الهوية.",
         heroText: "مرحباً بكم في أنيق، المتجر المميز للمبدعين المستقلين وجامعي القطع الفريدة.",
         enterMarketplace: "دخول المتجر",
-        trackMyOrder: "تتبع طلبي",
+        basket: "السلة",
+        account: "الحساب",
+        login: "تسجيل الدخول",
+        register: "إنشاء حساب",
+        fullName: "الاسم الكامل",
+        phone: "رقم الهاتف",
+        password: "كلمة المرور",
+        createAccount: "إنشاء الحساب",
+        myProfile: "ملفي الشخصي",
+        contactInfo: "معلومات الاتصال",
+        shippingLocation: "موقع الشحن",
+        updateLocation: "تحديث الموقع",
+        enterLocation: "المدينة، الحي، رقم الشارع...",
+        deliveryHint: "أدخل موقع التوصيل الخاص بك. سيتصل بك فريقنا.",
         curatedExcellence: "تميز منتقى",
         curatedText: "يتم اختيار كل متجر على منصتنا يدوياً لضمان الجودة والأصالة.",
         directConnect: "اتصال مباشر",
@@ -239,6 +269,10 @@ const TRANSLATIONS = {
         contactUs: "اتصل بنا",
         terms: "شروط الخدمة",
         footerText: "إعادة تعريف التجزئة المستقلة للعصر الحديث.",
+        all: "الكل",
+        men: "الرجال",
+        women: "النساء",
+        kids: "الأطفال",
         statusAccepted: "مقبول",
         statusRefused: "مرفوض",
         phLabel: "هاتف:",
@@ -249,6 +283,8 @@ const TRANSLATIONS = {
 let currentView = "home";
 let activeShop = null;
 let loggedInShopId = localStorage.getItem('aneeq_seller_id');
+let loggedInUser = JSON.parse(localStorage.getItem('aneeq_user') || 'null');
+let trackOrdersUnsubscribe = null;
 let isMasterLoggedIn = localStorage.getItem('aneeq_master_session') === 'true';
 let currentProductToBuy = null;
 let currentLang = localStorage.getItem('aneeq_lang') || 'en';
@@ -263,13 +299,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     setLanguage(currentLang);
     
     // 3. Recovery of states
+    if (loggedInUser) {
+        // If logged in as user, update UI
+        updateProfileUI();
+    }
+
     if (loggedInShopId) {
         const id = loggedInShopId; 
         const shop = SHOPS.find(s => s.id === id);
         if (shop) {
-            document.getElementById('admin-login').classList.add('hidden');
-            document.getElementById('admin-dashboard').classList.remove('hidden');
-            // Name will be updated by initSettingsListener when it fires
+            document.getElementById('seller-tools').classList.remove('hidden');
             renderAdminInventory();
         } else {
             loggedInShopId = null;
@@ -285,7 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Check URL hash on load
     const hash = window.location.hash.substring(1);
-    if (hash && ['home', 'marketplace', 'track', 'admin', 'master'].includes(hash)) {
+    if (hash && ['home', 'marketplace', 'track', 'account', 'master'].includes(hash)) {
         showView(hash);
     } else {
         showView('home');
@@ -308,7 +347,7 @@ function setLanguage(lang) {
         initMarketplace();
         renderProductFeed();
     }
-    if(currentView === 'track') handleTrackOrder();
+    if(currentView === 'basket') handleBasketAutoTrack();
     if(currentView === 'master') renderMasterOrders();
     if(loggedInShopId) renderAdminInventory();
 }
@@ -320,17 +359,61 @@ function updateStaticTranslations() {
     const navButtons = document.querySelectorAll('.navbar nav button');
     if(navButtons.length >= 3) {
         navButtons[0].innerText = t.marketplace;
-        navButtons[1].innerText = t.trackOrder;
-        navButtons[2].innerText = t.sellerPortal;
+        navButtons[1].innerText = t.basket;
+        navButtons[2].innerText = t.account;
     }
     
+    // Account View
+    const authCard = document.getElementById('account-auth');
+    if(authCard) {
+        document.getElementById('tab-login').innerText = t.login;
+        document.getElementById('tab-register').innerText = t.register;
+        
+        document.getElementById('login-phone').placeholder = t.phone;
+        document.getElementById('login-pass').placeholder = t.password;
+        const loginBtn = authCard.querySelector('#form-login button');
+        if(loginBtn) loginBtn.innerText = t.login;
+        
+        document.getElementById('reg-name').placeholder = t.fullName;
+        document.getElementById('reg-phone').placeholder = t.phone;
+        document.getElementById('reg-pass').placeholder = t.password;
+        const regBtn = authCard.querySelector('#form-register button');
+        if(regBtn) regBtn.innerText = t.createAccount;
+    }
+    
+    const profileView = document.getElementById('account-profile');
+    if(profileView) {
+       document.getElementById('user-display-name').innerText = loggedInUser ? loggedInUser.name : t.myProfile;
+       profileView.querySelectorAll('h3')[0].innerText = t.contactInfo;
+       profileView.querySelectorAll('h3')[1].innerText = t.shippingLocation;
+       document.getElementById('profile-location').placeholder = t.enterLocation;
+       const updateLocBtn = profileView.querySelector('button[onclick="saveProfileLocation()"]');
+       if(updateLocBtn) updateLocBtn.innerText = t.updateLocation;
+    }
+
+    // Basket View
+    const basketView = document.getElementById('view-basket');
+    if(basketView) {
+        const basketTitle = document.getElementById('basket-title');
+        if(basketTitle) basketTitle.innerHTML = currentLang === 'ar' ? `سلتي <span class="accent-text">الخاصة</span>` : `My <span class="accent-text">Basket</span>`;
+        document.getElementById('basket-status-title').innerText = t.requestStatus;
+    }
+
+    // Modal
+    const buyModal = document.querySelector('.modal-content');
+    if(buyModal) {
+        document.getElementById('buy-modal-title').innerText = t.purchaseRequest;
+        document.getElementById('buy-modal-hint').innerText = t.deliveryHint;
+        document.getElementById('customer-location').placeholder = t.enterLocation;
+        buyModal.querySelector('.btn-primary').innerText = t.confirmRequest;
+    }
     // Home
     const homeHero = document.querySelector('.home-hero');
     if(homeHero) {
         homeHero.querySelector('h1').innerHTML = `${t.heroTitle} <span class="accent-text">${t.heroIdentity}</span>`;
         homeHero.querySelector('p').innerText = t.heroText;
         homeHero.querySelectorAll('button')[0].innerText = t.enterMarketplace;
-        homeHero.querySelectorAll('button')[1].innerText = t.trackMyOrder;
+        homeHero.querySelectorAll('button')[1].innerText = t.basket;
     }
     
     const features = document.querySelectorAll('.feature-card');
@@ -350,6 +433,15 @@ function updateStaticTranslations() {
         promo.querySelector('button').innerText = t.discoverBrands;
     }
     
+    // Categories
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        const cat = btn.dataset.category;
+        if (cat === 'all') btn.innerText = t.all;
+        if (cat === 'Men') btn.innerText = t.men;
+        if (cat === 'Women') btn.innerText = t.women;
+        if (cat === 'Kids') btn.innerText = t.kids;
+    });
+
     // Marketplace
     const mpHero = document.querySelector('#view-marketplace .hero');
     if(mpHero) {
@@ -401,10 +493,17 @@ function updateStaticTranslations() {
 
         adminDashboard.querySelectorAll('.cardi h3')[1].innerText = t.addNewProduct;
         document.getElementById('p-name').placeholder = t.productName;
-        document.getElementById('p-cat').placeholder = t.category;
         document.getElementById('p-price').placeholder = t.price;
         adminDashboard.querySelector('.admin-form button').innerText = t.publishProduct;
         adminDashboard.querySelectorAll('.cardi h3')[1].innerText = t.inventory;
+
+        const catSelect = document.getElementById('p-cat');
+        if (catSelect) {
+            catSelect.options[0].text = currentLang === 'ar' ? 'اختر الفئة' : 'Select Category';
+            catSelect.options[1].text = t.men;
+            catSelect.options[2].text = t.women;
+            catSelect.options[3].text = t.kids;
+        }
     }
     
     // Master Admin
@@ -418,15 +517,6 @@ function updateStaticTranslations() {
     const masterDashboard = document.getElementById('master-dashboard');
     if(masterDashboard) {
         masterDashboard.querySelector('h2').innerText = t.commandCenter;
-    }
-    
-    // Modal
-    const buyModal = document.querySelector('.modal-content');
-    if(buyModal) {
-        buyModal.querySelector('h3').innerText = t.purchaseRequest;
-        buyModal.querySelector('.modal-hint').innerText = t.phoneLabel;
-        document.getElementById('customer-phone').placeholder = t.phoneLabel;
-        buyModal.querySelector('.btn-primary').innerText = t.confirmRequest;
     }
     
     // Toast
@@ -455,7 +545,7 @@ function updateStaticTranslations() {
 // Listen for hash changes
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.substring(1);
-    if (hash && ['home', 'marketplace', 'track', 'admin', 'master'].includes(hash)) {
+    if (hash && ['home', 'marketplace', 'basket', 'account', 'master'].includes(hash)) {
         showView(hash);
     }
 });
@@ -467,6 +557,10 @@ function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     const target = document.getElementById(`view-${viewId}`);
     if(target) target.classList.remove('hidden');
+    
+    if(viewId === 'basket') {
+        handleBasketAutoTrack();
+    }
     
     if(viewId === 'marketplace') {
         initMarketplace();
@@ -520,14 +614,10 @@ function initMarketplace() {
     if (!list) return;
 
     list.innerHTML = SHOPS.map(shop => {
-        const heroImage = shopSettingsOverrides[shop.id]?.hero || shop.hero;
         const shopName = shopSettingsOverrides[shop.id]?.name || shop.name;
         return `
             <div class="shop-card" onclick="openShop('${shop.id}')">
                 <div class="shop-frame">
-                    <div class="shop-img-wrapper">
-                        <img src="${heroImage}" alt="${shopName}">
-                    </div>
                     <div class="shop-card-content">
                         <img src="${shop.logo}" class="shop-logo" alt="${shopName} logo">
                         <div class="shop-info">
@@ -692,6 +782,12 @@ function openBuyModal(id, name, price, image) {
             </div>
         </div>
     `;
+    
+    // Pre-fill location if user is logged in
+    if(loggedInUser && loggedInUser.location) {
+        document.getElementById('customer-location').value = loggedInUser.location;
+    }
+    
     document.getElementById('buy-modal').classList.remove('hidden');
 }
 
@@ -702,27 +798,26 @@ function closeModal() {
 async function submitOrder() {
     if (!db) return;
     const t = TRANSLATIONS[currentLang];
-    let phone = document.getElementById('customer-phone').value;
-    if(!phone) return alert(currentLang === 'ar' ? "يرجى إدخال رقم الهاتف" : "Please enter phone");
+    const location = document.getElementById('customer-location').value;
+    if(!location) return alert(currentLang === 'ar' ? "يرجى إدخال الموقع" : "Please enter location");
     
-    // Ensure +964 prefix for IQ
-    if(!phone.startsWith('+')) {
-        // If it starts with 0, replace with +964
-        if(phone.startsWith('0')) {
-            phone = '+964' + phone.substring(1);
-        } else if(!phone.startsWith('964')) {
-            phone = '+964' + phone;
-        } else {
-            phone = '+' + phone;
-        }
+    // Check if logged in to get user details
+    if(!loggedInUser) {
+        alert(currentLang === 'ar' ? "يرجى تسجيل الدخول أولاً" : "Please login to place an order");
+        showView('account');
+        closeModal();
+        return;
     }
-    
+
     const shopName = shopSettingsOverrides[activeShop.id]?.name || activeShop.name;
     const orderData = {
         productName: currentProductToBuy.name,
         price: Number(currentProductToBuy.price),
         shopName: shopName,
-        phone: phone,
+        phone: loggedInUser.phone,
+        customerName: loggedInUser.name,
+        location: location,
+        userId: loggedInUser.phone, // using phone as ID for simplicity in this demo logic
         time: new Date().toLocaleString(),
         status: 'pending',
         masterMessage: '',
@@ -733,6 +828,12 @@ async function submitOrder() {
         await addDoc(collection(db, "orders"), orderData);
         closeModal();
         showToast();
+        
+        // Update user location if it was empty
+        if(!loggedInUser.location) {
+            loggedInUser.location = location;
+            saveProfileLocation(true);
+        }
     } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, "orders");
     }
@@ -744,31 +845,207 @@ function showToast() {
     setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
+// ACCOUNT & AUTH
+function toggleAuthMode(mode) {
+    const loginTab = document.getElementById('tab-login');
+    const regTab = document.getElementById('tab-register');
+    const loginForm = document.getElementById('form-login');
+    const regForm = document.getElementById('form-register');
+    
+    if(mode === 'login') {
+        loginTab.style.fontWeight = '700';
+        loginTab.style.borderBottom = '2px solid #000';
+        loginTab.style.color = '#000';
+        regTab.style.fontWeight = '400';
+        regTab.style.borderBottom = 'none';
+        regTab.style.color = '#999';
+        loginForm.classList.remove('hidden');
+        regForm.classList.add('hidden');
+    } else {
+        regTab.style.fontWeight = '700';
+        regTab.style.borderBottom = '2px solid #000';
+        regTab.style.color = '#000';
+        loginTab.style.fontWeight = '400';
+        loginTab.style.borderBottom = 'none';
+        loginTab.style.color = '#999';
+        regForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+    }
+}
+
+async function handleRegister() {
+    if (!db) return;
+    const name = document.getElementById('reg-name').value.trim();
+    const phoneInput = document.getElementById('reg-phone').value.trim();
+    const pass = document.getElementById('reg-pass').value.trim();
+    
+    if(!name || !phoneInput || !pass) return alert("Please fill all fields");
+    
+    let phone = normalizePhone(phoneInput);
+    
+    try {
+        const userDoc = await getDocFromServer(doc(db, "users", phone));
+        if(userDoc.exists()) return alert("Phone number already registered.");
+        
+        const userData = {
+            name,
+            phone,
+            password: pass,
+            location: "",
+            createdAt: serverTimestamp()
+        };
+        
+        await setDoc(doc(db, "users", phone), userData);
+        alert("Account created successfully! Please login.");
+        toggleAuthMode('login');
+    } catch (e) {
+        handleFirestoreError(e, 'WRITE', 'users');
+    }
+}
+
+async function handleLogin() {
+    if (!db) return;
+    const phoneInput = document.getElementById('login-phone').value.trim();
+    const pass = document.getElementById('login-pass').value.trim();
+    
+    if(!phoneInput || !pass) return alert("Please enter phone and password");
+    
+    let phone = normalizePhone(phoneInput);
+    
+    try {
+        const userDoc = await getDocFromServer(doc(db, "users", phone));
+        if(userDoc.exists()) {
+            const data = userDoc.data();
+            if(data.password === pass) {
+                loggedInUser = data;
+                localStorage.setItem('aneeq_user', JSON.stringify(data));
+                
+                const sellerShop = SHOPS.find(s => s.pass === pass);
+                if(sellerShop) {
+                    loggedInShopId = sellerShop.id;
+                    localStorage.setItem('aneeq_seller_id', loggedInShopId);
+                }
+                
+                loginSuccess();
+                return;
+            }
+        }
+        
+        const legacyShop = SHOPS.find(s => s.pass === pass);
+        if(legacyShop) {
+             loggedInUser = { name: legacyShop.name, phone: phone, location: "" };
+             loggedInShopId = legacyShop.id;
+             localStorage.setItem('aneeq_user', JSON.stringify(loggedInUser));
+             localStorage.setItem('aneeq_seller_id', loggedInShopId);
+             loginSuccess();
+             return;
+        }
+
+        alert("Invalid phone or password.");
+    } catch (e) {
+        handleFirestoreError(e, 'GET', 'users');
+    }
+}
+
+function normalizePhone(phone) {
+    if(!phone.startsWith('+')) {
+        if(phone.startsWith('0')) return '+964' + phone.substring(1);
+        if(!phone.startsWith('964')) return '+964' + phone;
+        return '+' + phone;
+    }
+    return phone;
+}
+
+function loginSuccess() {
+    document.getElementById('account-auth').classList.add('hidden');
+    document.getElementById('account-profile').classList.remove('hidden');
+    updateProfileUI();
+    
+    if(loggedInShopId) {
+        document.getElementById('seller-tools').classList.remove('hidden');
+        renderAdminInventory();
+    }
+    
+    showToast();
+}
+
+function updateProfileUI() {
+    if(!loggedInUser) return;
+    document.getElementById('account-auth').classList.add('hidden');
+    document.getElementById('account-profile').classList.remove('hidden');
+    
+    document.getElementById('user-display-name').innerText = loggedInUser.name;
+    document.getElementById('profile-info-display').innerHTML = `
+        <p style="margin-bottom: 5px;"><strong>Phone:</strong> ${loggedInUser.phone}</p>
+        <p style="font-size: 13px; color: #666;">Account active.</p>
+    `;
+    if(loggedInUser.location) {
+        document.getElementById('profile-location').value = loggedInUser.location;
+    }
+}
+
+async function saveProfileLocation(silent = false) {
+    if(!db || !loggedInUser) return;
+    const loc = document.getElementById('profile-location').value.trim();
+    
+    try {
+        await updateDoc(doc(db, "users", loggedInUser.phone), { location: loc });
+        loggedInUser.location = loc;
+        localStorage.setItem('aneeq_user', JSON.stringify(loggedInUser));
+        if(!silent) alert("Location updated!");
+    } catch (e) {
+        handleFirestoreError(e, 'UPDATE', 'users');
+    }
+}
+
 // SELLER ADMIN
 function setupAdminSelect() {
     const sel = document.getElementById('admin-shop-select');
-    sel.innerHTML = SHOPS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    if(sel) sel.style.display = 'none';
 }
 
 function handleSellerLogin() {
-    const t = TRANSLATIONS[currentLang];
-    const id = document.getElementById('admin-shop-select').value;
-    const pass = document.getElementById('admin-pass').value;
-    const shop = SHOPS.find(s => s.id === id);
-    
-    if(shop.pass === pass) {
-        loggedInShopId = id;
-        localStorage.setItem('aneeq_seller_id', id);
-        const displayName = shopSettingsOverrides[id]?.name || shop.name;
-        document.getElementById('admin-login').classList.add('hidden');
-        document.getElementById('admin-dashboard').classList.remove('hidden');
-        document.getElementById('admin-store-name').innerText = displayName;
-        updateStaticTranslations(); // Update text fields like the name input
-        renderAdminInventory();
-    } else {
-        alert(t.wrongKey);
-    }
+    showView('account');
 }
+
+function logout() {
+    loggedInShopId = null;
+    loggedInUser = null;
+    localStorage.removeItem('aneeq_seller_id');
+    localStorage.removeItem('aneeq_user');
+    document.getElementById('account-auth').classList.remove('hidden');
+    document.getElementById('account-profile').classList.add('hidden');
+    document.getElementById('seller-tools').classList.add('hidden');
+    
+    document.getElementById('login-phone').value = '';
+    document.getElementById('login-pass').value = '';
+}
+
+// Global Exports
+window.handleBasketAutoTrack = handleBasketAutoTrack;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.saveProfileLocation = saveProfileLocation;
+window.logout = logout;
+window.showView = showView;
+window.openShop = openShop;
+window.buyFromFeed = buyFromFeed;
+window.openBuyModal = openBuyModal;
+window.closeModal = closeModal;
+window.submitOrder = submitOrder;
+window.handleSellerLogin = handleSellerLogin;
+window.addNewProduct = addNewProduct;
+window.deleteProduct = deleteProduct;
+window.handleTrackOrder = handleBasketAutoTrack;
+window.handleMasterLogin = handleMasterLogin;
+window.masterLogout = masterLogout;
+window.updateOrderStatus = updateOrderStatus;
+window.deleteOrderByID = deleteOrderByID;
+window.setLanguage = setLanguage;
+window.filterByCategory = filterByCategory;
+window.previewProductImage = previewProductImage;
+window.previewStoreImage = previewStoreImage;
+window.saveStoreSettings = saveStoreSettings;
 
 let adminInventoryUnsubscribe = null;
 
@@ -864,11 +1141,7 @@ async function saveStoreSettings() {
 
     try {
         await setDoc(doc(db, "shop_settings", loggedInShopId), updateData, { merge: true });
-        
-        // No reload needed! The real-time listener (initSettingsListener) updates the UI automatically
         alert(currentLang === 'ar' ? 'تم تحديث الإعدادات!' : "Store settings updated!");
-        
-        // Clear preview
         if (currentStoreBase64) {
             currentStoreBase64 = null;
             document.getElementById('store-settings-preview').innerHTML = '';
@@ -884,7 +1157,6 @@ async function saveStoreSettings() {
 async function previewProductImage(input) {
     const preview = document.getElementById('product-preview');
     const file = input.files[0];
-    
     if (file) {
         const reader = new FileReader();
         reader.onload = async function(e) {
@@ -906,9 +1178,7 @@ async function addNewProduct() {
     const cat = document.getElementById('p-cat').value;
     const price = document.getElementById('p-price').value;
     const img = currentBase64Image;
-    
     if(!name || !price || !img) return alert(t.fillFields);
-    
     const productData = {
         name,
         category: cat || 'General',
@@ -917,11 +1187,8 @@ async function addNewProduct() {
         shopId: loggedInShopId,
         createdAt: serverTimestamp()
     };
-    
     try {
         await addDoc(collection(db, "inventory"), productData);
-        
-        // Clear
         document.getElementById('p-name').value = '';
         document.getElementById('p-cat').value = '';
         document.getElementById('p-price').value = '';
@@ -940,14 +1207,6 @@ async function deleteProduct(productId) {
     }
 }
 
-function logout() {
-    loggedInShopId = null;
-    localStorage.removeItem('aneeq_seller_id');
-    document.getElementById('admin-login').classList.remove('hidden');
-    document.getElementById('admin-dashboard').classList.add('hidden');
-    document.getElementById('admin-pass').value = '';
-}
-
 function masterLogout() {
     isMasterLoggedIn = false;
     localStorage.removeItem('aneeq_master_session');
@@ -956,37 +1215,37 @@ function masterLogout() {
     document.getElementById('master-pass').value = '';
 }
 
-let trackOrdersUnsubscribe = null;
-
-// TRACK ORDER (CUSTOMER)
-function handleTrackOrder() {
+// BASKET & TRACKING
+function handleBasketAutoTrack() {
     if (!db) return;
-    if (trackOrdersUnsubscribe) trackOrdersUnsubscribe();
     const t = TRANSLATIONS[currentLang];
-    let phone = document.getElementById('track-phone').value;
-    if(!phone) return;
+    const authPrompt = document.getElementById('basket-auth-prompt');
+    const resultsDiv = document.getElementById('basket-results');
+    const desc = document.getElementById('basket-desc');
 
-    if(!phone.startsWith('+')) {
-        if(phone.startsWith('0')) {
-            phone = '+964' + phone.substring(1);
-        } else if(!phone.startsWith('964')) {
-            phone = '+964' + phone;
-        } else {
-            phone = '+' + phone;
-        }
+    if (!loggedInUser) {
+        authPrompt.classList.remove('hidden');
+        resultsDiv.classList.add('hidden');
+        desc.innerText = currentLang === 'ar' ? 'يرجى تسجيل الدخول لعرض سلتك.' : 'Please login to view your basket.';
+        return;
     }
 
-    const resultsDiv = document.getElementById('track-results');
-    const listDiv = document.getElementById('customer-orders-list');
+    authPrompt.classList.add('hidden');
     resultsDiv.classList.remove('hidden');
+    desc.innerText = currentLang === 'ar' ? 'عرض وتتبع طلبات الشراء الحالية.' : 'View and track your current purchase requests.';
 
+    if (trackOrdersUnsubscribe) trackOrdersUnsubscribe();
+    
+    const phone = loggedInUser.phone;
+    const listDiv = document.getElementById('customer-orders-list');
+    
     const q = query(collection(db, "orders"), where("phone", "==", phone));
     trackOrdersUnsubscribe = onSnapshot(q, (snapshot) => {
         let customerOrders = [];
         snapshot.forEach(doc => customerOrders.push({ ...doc.data(), id: doc.id }));
 
         if(customerOrders.length === 0) {
-            listDiv.innerHTML = `<p style="text-align:center; padding:40px; color:#999; background:white; border-radius:15px;">${t.noOrdersFound}</p>`;
+            listDiv.innerHTML = `<p style="text-align:center; padding:40px; color:#999; background:white; border-radius:15px; border: 1px solid #eee;">${t.noOrdersFound}</p>`;
         } else {
             customerOrders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             listDiv.innerHTML = customerOrders.map(o => {
@@ -996,22 +1255,22 @@ function handleTrackOrder() {
                 if(o.status === 'Refused') displayStatus = t.statusRefused;
 
                 return `
-                    <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                    <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 10px; border: 1px solid #eee; margin-bottom: 15px; border-radius: 16px; padding: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <strong>${o.productName}</strong><br>
-                                <small>${o.shopName} | ${o.time}</small>
+                                <strong style="font-size: 16px;">${o.productName}</strong><br>
+                                <small style="color: #999;">${o.shopName} | ${o.time}</small>
                             </div>
-                            <span style="background: ${statusColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">${displayStatus}</span>
+                            <span style="background: ${statusColor}; color: white; padding: 6px 14px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase;">${displayStatus}</span>
                         </div>
                         
                         ${o.masterMessage ? `
-                            <div style="background: #f8f8f8; padding: 15px; border-radius: 12px; border-left: 4px solid ${statusColor}; margin-top: 5px;">
-                                <p style="font-size: 11px; color: #999; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">${currentLang === 'ar' ? 'رسالة من أنيق ماستر' : 'Message from aneeq Master'}</p>
-                                <p style="color: #333; font-style: italic; line-height: 1.5;">"${o.masterMessage}"</p>
+                            <div style="background: #fdfdfd; padding: 15px; border-radius: 12px; border-left: 4px solid ${statusColor}; margin-top: 10px;">
+                                <p style="font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Aneeq Master</p>
+                                <p style="color: #333; font-style: italic; line-height: 1.5; font-size: 14px;">"${o.masterMessage}"</p>
                             </div>
                         ` : `
-                            <p style="font-size: 12px; color: #999; margin-top: 5px;">${t.waitMaster}</p>
+                            <p style="font-size: 12px; color: #999; margin-top: 10px; font-style: italic;">Waiting for validation from Aneeq Master...</p>
                         `}
                     </div>
                 `;
@@ -1022,7 +1281,6 @@ function handleTrackOrder() {
     });
 }
 
-// MASTER ADMIN
 function handleMasterLogin() {
     const t = TRANSLATIONS[currentLang];
     const pass = document.getElementById('master-pass').value;
@@ -1038,34 +1296,27 @@ function handleMasterLogin() {
 }
 
 let masterOrdersUnsubscribe = null;
-
 function renderMasterOrders() {
     if (!db) return;
     if (masterOrdersUnsubscribe) masterOrdersUnsubscribe();
     const t = TRANSLATIONS[currentLang];
     const container = document.getElementById('master-orders-list');
-    
-    // Real-time listener for master
     const q = query(collection(db, "orders"));
     masterOrdersUnsubscribe = onSnapshot(q, (snapshot) => {
         let orders = [];
         snapshot.forEach(doc => orders.push({ ...doc.data(), id: doc.id }));
-
         document.getElementById('master-stats').innerHTML = `
             <div style="display:flex; gap:20px; margin-top:20px;">
                 <div>${t.totalLabel}${orders.length}</div>
                 <div style="color:lawngreen">${t.systemOnline}</div>
             </div>
         `;
-
         orders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
         container.innerHTML = orders.map((o) => {
             const statusColor = o.status === 'Accepted' ? '#4CAF50' : (o.status === 'Refused' ? '#F44336' : '#999');
             let displayStatus = (o.status === 'pending' || !o.status) ? (currentLang === 'ar' ? 'قيد الانتظار' : 'Pending') : o.status;
             if(o.status === 'Accepted') displayStatus = t.statusAccepted;
             if(o.status === 'Refused') displayStatus = t.statusRefused;
-
             return `
             <div class="order-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1079,22 +1330,17 @@ function renderMasterOrders() {
                         <span style="color:#999; font-size:12px; display: block; margin-top: 5px;">${t.phLabel} ${o.phone}</span>
                     </div>
                 </div>
-
-                ${(o.status === 'pending' || !o.status) ? `
-                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                ${(o.status === 'pending' || !o.status) ? `<div style="border-top: 1px solid #eee; padding-top: 15px;">
                         <p style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #444;">${t.masterAction}</p>
                         <textarea id="msg-${o.id}" placeholder="${t.typeMessage}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 14px; min-height: 60px;"></textarea>
                         <div style="display: flex; gap: 10px;">
                             <button onclick="updateOrderStatus('${o.id}', 'Accepted')" style="flex: 1; background: #4CAF50; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">${t.acceptRequest}</button>
                             <button onclick="updateOrderStatus('${o.id}', 'Refused')" style="flex: 1; background: #F44336; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">${t.refuseRequest}</button>
                         </div>
-                    </div>
-                ` : `
-                    <div style="border-top: 1px solid #eee; padding-top: 10px; font-size: 13px;">
+                    </div>` : `<div style="border-top: 1px solid #eee; padding-top: 10px; font-size: 13px;">
                         <strong>${t.messageSent}</strong> <span style="color: #666;">${o.masterMessage || 'No message provided.'}</span>
                         <button onclick="deleteOrderByID('${o.id}')" style="display: block; margin-top: 10px; background: none; border: none; color: #999; cursor: pointer; font-size: 11px; text-decoration: underline; padding: 0;">${t.removeHistory}</button>
-                    </div>
-                `}
+                    </div>`}
             </div>
         `}).join('') || `<p style="color:#999; text-align:center;">${t.noItemsMarket}</p>`;
     }, (error) => {
@@ -1105,7 +1351,6 @@ function renderMasterOrders() {
 async function updateOrderStatus(orderId, newStatus) {
     const msgInput = document.getElementById(`msg-${orderId}`);
     const msg = msgInput ? msgInput.value : "";
-    
     try {
         await updateDoc(doc(db, "orders", orderId), {
             status: newStatus,
@@ -1123,26 +1368,4 @@ async function deleteOrderByID(orderId) {
         handleFirestoreError(error, OperationType.DELETE, `orders/${orderId}`);
     }
 }
-
-// Attach to window for global access
-window.showView = showView;
-window.openShop = openShop;
-window.buyFromFeed = buyFromFeed;
-window.openBuyModal = openBuyModal;
-window.closeModal = closeModal;
-window.submitOrder = submitOrder;
-window.handleSellerLogin = handleSellerLogin;
-window.addNewProduct = addNewProduct;
-window.deleteProduct = deleteProduct;
-window.logout = logout;
-window.handleTrackOrder = handleTrackOrder;
-window.handleMasterLogin = handleMasterLogin;
-window.masterLogout = masterLogout;
-window.updateOrderStatus = updateOrderStatus;
-window.deleteOrderByID = deleteOrderByID;
-window.setLanguage = setLanguage;
-window.filterByCategory = filterByCategory;
-window.previewProductImage = previewProductImage;
-window.previewStoreImage = previewStoreImage;
-window.saveStoreSettings = saveStoreSettings;
 

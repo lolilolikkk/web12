@@ -46,8 +46,8 @@
             </div>
             <nav>
                 <button onclick="showView('marketplace')">Marketplace</button>
-                <button onclick="showView('track')">Track Order</button>
-                <button onclick="showView('admin')">Seller Portal</button>
+                <button onclick="showView('basket')">Basket</button>
+                <button onclick="showView('account')" id="nav-account-btn">Account</button>
             </nav>
         </div>
     </header>
@@ -60,7 +60,7 @@
                 <p>Welcome to aneeq, the premium marketplace for independent creators and discerning collectors.</p>
                 <div style="display: flex; gap: 15px; justify-content: center;">
                     <button class="btn-primary large" onclick="showView('marketplace')">Enter Marketplace</button>
-                    <button class="btn-outline large" onclick="showView('track')" style="background: white; border-radius: 12px; font-weight: 600; padding: 18px 40px;">Track My Order</button>
+                    <button class="btn-outline large" onclick="showView('basket')" style="background: white; border-radius: 12px; font-weight: 600; padding: 18px 40px;" id="home-basket-btn">Basket</button>
                 </div>
             </div>
             
@@ -107,10 +107,9 @@
 
             <div class="filter-bar">
                 <button class="filter-btn active" data-category="all" onclick="filterByCategory('all')">All Products</button>
-                <button class="filter-btn" data-category="Hoodies" onclick="filterByCategory('Hoodies')">Hoodies</button>
-                <button class="filter-btn" data-category="Tees" onclick="filterByCategory('Tees')">Graphic Tees</button>
-                <button class="filter-btn" data-category="Accessories" onclick="filterByCategory('Accessories')">Accessories</button>
-                <button class="filter-btn" data-category="Outerwear" onclick="filterByCategory('Outerwear')">Outerwear</button>
+                <button class="filter-btn" data-category="Men" onclick="filterByCategory('Men')">Men</button>
+                <button class="filter-btn" data-category="Women" onclick="filterByCategory('Women')">Women</button>
+                <button class="filter-btn" data-category="Kids" onclick="filterByCategory('Kids')">Kids</button>
             </div>
 
             <div class="grid-shops" id="shops-list">
@@ -126,22 +125,26 @@
             </div>
         </section>
 
-        <!-- 1.5 TRACK ORDER VIEW -->
-        <section id="view-track" class="view hidden">
+        <!-- 1.5 BASKET VIEW -->
+        <section id="view-basket" class="view hidden">
             <div class="back-nav-container">
                 <button onclick="showView('home')" class="btn-back">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     <span>Back to Home</span>
                 </button>
             </div>
-            <div class="auth-card">
-                <h2 style="font-family: var(--font-serif); font-style: italic; font-size: 32px; margin-bottom: 10px;">Track Order</h2>
-                <p style="color: var(--muted); margin-bottom: 30px;">Enter your number to see messages from Master.</p>
-                <input type="tel" id="track-phone" placeholder="07XX XXX XXXX">
-                <button onclick="handleTrackOrder()" class="btn-primary">View Status</button>
+            <div class="hero">
+                <h1 id="basket-title">My <span class="accent-text">Basket</span></h1>
+                <p id="basket-desc">View and track your current purchase requests.</p>
             </div>
-            <div id="track-results" class="hidden" style="margin-top: 40px; text-align: left;">
-                <h3 style="margin-bottom: 20px; font-family: var(--font-serif); font-style: italic; font-size: 28px;">My Request Status</h3>
+            
+            <div class="track-card cardi" id="basket-auth-prompt">
+                <p style="text-align: center; margin-bottom: 20px;">Please login to view your basket.</p>
+                <button onclick="showView('account')" class="btn-primary" style="width: 100%;">Go to Account</button>
+            </div>
+
+            <div id="basket-results" class="hidden" style="margin-top: 40px; text-align: left;">
+                <h3 id="basket-status-title" style="margin-bottom: 20px; font-family: var(--font-serif); font-style: italic; font-size: 28px;">My Request Status</h3>
                 <div id="customer-orders-list" class="orders-stack"></div>
             </div>
         </section>
@@ -160,56 +163,98 @@
             </div>
         </section>
 
-        <!-- 3. SELLER ADMIN VIEW -->
-        <section id="view-admin" class="view hidden">
-            <div id="admin-login" class="auth-card">
-                <h2>Seller Login</h2>
-                <select id="admin-shop-select"></select>
-                <input type="password" id="admin-pass" placeholder="Store Passkey">
-                <button onclick="handleSellerLogin()">Enter Dashboard</button>
+        <!-- 3. ACCOUNT VIEW (LOGIN/REGISTER/PROFILE) -->
+        <section id="view-account" class="view hidden">
+            <div id="account-auth" class="auth-card">
+                <div class="auth-tabs" style="display: flex; gap: 20px; justify-content: center; margin-bottom: 30px;">
+                    <button id="tab-login" onclick="toggleAuthMode('login')" style="font-weight: 700; border-bottom: 2px solid #000; padding: 5px 10px;">Login</button>
+                    <button id="tab-register" onclick="toggleAuthMode('register')" style="font-weight: 400; color: #999; padding: 5px 10px;">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="form-login">
+                    <input type="tel" id="login-phone" placeholder="Phone Number">
+                    <input type="password" id="login-pass" placeholder="Password">
+                    <button onclick="handleLogin()" class="btn-primary" style="width: 100%;">Login</button>
+                    <p style="font-size: 11px; color: #999; margin-top: 20px;">Sellers: Use your store key as password for now.</p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="form-register" class="hidden">
+                    <input type="text" id="reg-name" placeholder="Full Name">
+                    <input type="tel" id="reg-phone" placeholder="Phone Number">
+                    <input type="password" id="reg-pass" placeholder="Create Password">
+                    <button onclick="handleRegister()" class="btn-primary" style="width: 100%;">Create Account</button>
+                </div>
             </div>
-            <div id="admin-dashboard" class="hidden">
+
+            <div id="account-profile" class="hidden">
                 <div class="admin-header">
-                    <h2 id="admin-store-name">Store Manager</h2>
+                    <h2 id="user-display-name">My Profile</h2>
                     <button class="btn-outline" onclick="logout()">Logout</button>
                 </div>
-                <div class="admin-grid">
-                    <div style="display: flex; flex-direction: column; gap: 30px;">
-                        <div class="cardi admin-settings-card">
-                            <h3>Store Settings</h3>
-                            <div class="field-group" style="margin-bottom: 15px;">
-                                <label style="font-size: 12px; font-weight: 700; text-transform: uppercase;">Store Display Name</label>
-                                <input type="text" id="store-name-input" placeholder="Enter Store Name" style="margin-top: 5px;">
-                            </div>
-                            <div class="file-upload-group">
-                                <label class="file-label" style="height: 100px; padding: 10px;">
-                                    <span class="upload-icon">+</span>
-                                    <span class="upload-text" id="store-image-label">Store Hero Image</span>
-                                    <input type="file" accept="image/*" onchange="previewStoreImage(this)">
-                                </label>
-                                <div id="store-settings-preview" class="settings-preview"></div>
-                            </div>
-                            <button class="btn-primary" onclick="saveStoreSettings()" style="margin-top:10px; font-size: 13px;">Save Store Front</button>
-                        </div>
 
-                        <div class="admin-form cardi">
-                            <h3>Add New Product</h3>
-                        <input type="text" id="p-name" placeholder="Product Name">
-                        <input type="text" id="p-cat" placeholder="Category (e.g. Hoodies)">
-                        <input type="number" id="p-price" placeholder="Price ($)">
-                        <div class="file-upload-group">
-                            <label for="p-img" class="file-label">
-                                <span class="upload-icon">+</span>
-                                <span class="upload-text" id="product-image-label">Upload Product Image</span>
-                            </label>
-                            <input type="file" id="p-img" accept="image/*" onchange="previewProductImage(this)">
-                            <div id="product-preview" class="image-preview"></div>
+                <div class="user-profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; text-align: left;">
+                    <div class="cardi">
+                        <h3>Contact Info</h3>
+                        <div id="profile-info-display">
+                            <!-- Injected by JS -->
                         </div>
-                        <button onclick="addNewProduct()" class="btn-primary" style="margin-top: 10px;">Publish Product</button>
                     </div>
-                    <div class="admin-list cardi">
-                        <h3>Inventory</h3>
-                        <div id="admin-inventory-list"></div>
+                    <div class="cardi">
+                        <h3>Shipping Location</h3>
+                        <textarea id="profile-location" placeholder="Enter your default shipping address..." style="width: 100%; border: 1px solid #eee; padding: 10px; border-radius: 8px; min-height: 100px; font-size: 14px;"></textarea>
+                        <button class="btn-primary" onclick="saveProfileLocation()" style="margin-top: 15px; font-size: 12px; padding: 12px 20px;">Update Location</button>
+                    </div>
+                </div>
+
+                <!-- Seller Tools (Visible only if user is a seller) -->
+                <div id="seller-tools" class="hidden" style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 40px;">
+                    <h2 style="font-family: var(--font-serif); font-style: italic; font-size: 32px; margin-bottom: 20px;" id="admin-store-name">Store Manager</h2>
+                    <div class="admin-grid">
+                        <div style="display: flex; flex-direction: column; gap: 30px;">
+                            <div class="cardi admin-settings-card">
+                                <h3>Store Settings</h3>
+                                <div class="field-group" style="margin-bottom: 15px;">
+                                    <label style="font-size: 12px; font-weight: 700; text-transform: uppercase;">Store Display Name</label>
+                                    <input type="text" id="store-name-input" placeholder="Enter Store Name" style="margin-top: 5px;">
+                                </div>
+                                <div class="file-upload-group">
+                                    <label class="file-label" style="height: 100px; padding: 10px;">
+                                        <span class="upload-icon">+</span>
+                                        <span class="upload-text" id="store-image-label">Store Hero Image</span>
+                                        <input type="file" accept="image/*" onchange="previewStoreImage(this)">
+                                    </label>
+                                    <div id="store-settings-preview" class="settings-preview"></div>
+                                </div>
+                                <button class="btn-primary" onclick="saveStoreSettings()" style="margin-top:10px; font-size: 13px;">Save Store Front</button>
+                            </div>
+
+                            <div class="admin-form cardi">
+                                <h3>Add New Product</h3>
+                                <input type="text" id="p-name" placeholder="Product Name">
+                                <select id="p-cat">
+                                    <option value="" disabled selected>Select Category</option>
+                                    <option value="Men">Men</option>
+                                    <option value="Women">Women</option>
+                                    <option value="Kids">Kids</option>
+                                </select>
+                                <input type="number" id="p-price" placeholder="Price ($)">
+                                <div class="file-upload-group">
+                                    <label for="p-img" class="file-label">
+                                        <span class="upload-icon">+</span>
+                                        <span class="upload-text" id="product-image-label">Upload Product Image</span>
+                                    </label>
+                                    <input type="file" id="p-img" accept="image/*" onchange="previewProductImage(this)">
+                                    <div id="product-preview" class="image-preview"></div>
+                                </div>
+                                <button onclick="addNewProduct()" class="btn-primary" style="margin-top: 10px;">Publish Product</button>
+                            </div>
+                        </div>
+                        <div class="admin-list cardi">
+                            <h3>Inventory</h3>
+                            <div id="admin-inventory-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -248,7 +293,8 @@
                 <h4>Platform</h4>
                 <button onclick="showView('home')">Home</button>
                 <button onclick="showView('marketplace')">Marketplace</button>
-                <button onclick="showView('admin')">Seller Portal</button>
+                <button onclick="showView('account')">Account</button>
+                <button onclick="showView('basket')">Basket</button>
             </div>
             <div class="footer-legal">
                 <h4>Support</h4>
@@ -265,11 +311,11 @@
     <div id="buy-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h3>Purchase Request</h3>
+            <h3 id="buy-modal-title">Purchase Request</h3>
             <div id="modal-product-info"></div>
-            <p class="modal-hint">Enter your phone number. The seller will contact you to finalize.</p>
-            <input type="tel" id="customer-phone" placeholder="Phone Number (e.g. 0770 000 0000)">
-            <button onclick="submitOrder()" class="btn-primary">Confirm Request</button>
+            <p class="modal-hint" id="buy-modal-hint">Enter your delivery location. Our team will contact you.</p>
+            <textarea id="customer-location" placeholder="City, Neighborhood, Street No..." style="width: 100%; border: 1px solid #ccc; padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; min-height: 80px;"></textarea>
+            <button onclick="submitOrder()" class="btn-primary" style="width: 100%;">Confirm Request</button>
         </div>
     </div>
 

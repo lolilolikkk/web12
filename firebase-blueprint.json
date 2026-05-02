@@ -24,12 +24,39 @@
         "price": { "type": "number" },
         "shopName": { "type": "string" },
         "phone": { "type": "string" },
+        "customerName": { "type": "string" },
+        "location": { "type": "string" },
+        "userId": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "Accepted", "Refused"] },
         "masterMessage": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "time": { "type": "string", "description": "Display time string" }
       },
       "required": ["productName", "price", "shopName", "phone", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A customer or seller account.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "password": { "type": "string" },
+        "location": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "password"]
+    },
+    "ShopSettings": {
+      "title": "Shop Settings",
+      "description": "Visual settings for a shop.",
+      "type": "object",
+      "properties": {
+        "shopId": { "type": "string" },
+        "name": { "type": "string" },
+        "hero": { "type": "string", "description": "Base64 hero image" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "firestore": {
@@ -40,6 +67,14 @@
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Collection of all customer orders."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and credentials."
+    },
+    "/shop_settings/{shopId}": {
+      "schema": "ShopSettings",
+      "description": "Customized shop headers and names."
     }
   }
 }
