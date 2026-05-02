@@ -1,6 +1,6 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
-import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -18,8 +18,15 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 const auth = getAuth();
 
+let isAuthReady = false;
+
 // Sign in anonymously
 signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
+
+onAuthStateChanged(auth, (user) => {
+    isAuthReady = true;
+    console.log("Auth state changed:", user ? "Signed in" : "Signed out");
+});
 
 // Hide loader once JS is running
 const loader = document.getElementById('app-loader');
@@ -884,6 +891,12 @@ async function handleRegister() {
         console.error("Database not initialized");
         return;
     }
+    
+    if (!isAuthReady) {
+        showToast(currentLang === 'ar' ? 'جاري تهيئة النظام... حاول مرة أخرى' : "Initializing system... please try again in a few seconds.");
+        return;
+    }
+
     const name = document.getElementById('reg-name').value.trim();
     const phoneInput = document.getElementById('reg-phone').value.trim();
     const pass = document.getElementById('reg-pass').value.trim();
@@ -894,6 +907,11 @@ async function handleRegister() {
     }
     
     let phone = normalizePhone(phoneInput);
+    if (phone.length < 10) {
+        showToast(currentLang === 'ar' ? 'رقم هاتف غير صالح' : "Invalid phone number.");
+        return;
+    }
+    
     console.log("Registering phone:", phone);
     
     try {
@@ -914,6 +932,12 @@ async function handleRegister() {
         
         await setDoc(userRef, userData);
         showToast(currentLang === 'ar' ? 'تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول' : "Account created successfully! Please login.");
+        
+        // Reset fields
+        document.getElementById('reg-name').value = '';
+        document.getElementById('reg-phone').value = '';
+        document.getElementById('reg-pass').value = '';
+        
         setTimeout(() => toggleAuthMode('login'), 2000);
     } catch (e) {
         console.error("Registration error:", e);
@@ -924,6 +948,12 @@ async function handleRegister() {
 
 async function handleLogin() {
     if (!db) return;
+    
+    if (!isAuthReady) {
+        showToast(currentLang === 'ar' ? 'جاري تهيئة النظام... حاول مرة أخرى' : "Initializing system... please try again.");
+        return;
+    }
+
     const phoneInput = document.getElementById('login-phone').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
     
@@ -971,12 +1001,25 @@ async function handleLogin() {
 }
 
 function normalizePhone(phone) {
-    if(!phone.startsWith('+')) {
-        if(phone.startsWith('0')) return '+964' + phone.substring(1);
-        if(!phone.startsWith('964')) return '+964' + phone;
-        return '+' + phone;
+    // Remove all non-numeric characters except +
+    let clean = phone.replace(/[^\d+]/g, '');
+    
+    // If it starts with 0 and isn't + prefixed, replace with 964
+    if(clean.startsWith('0')) {
+        clean = '964' + clean.substring(1);
     }
-    return phone;
+    
+    // Ensure it has 964 prefix if it doesn't have + or 964
+    if(!clean.startsWith('+') && !clean.startsWith('964')) {
+        clean = '964' + clean;
+    }
+    
+    // Ensure + prefix
+    if(!clean.startsWith('+')) {
+        clean = '+' + clean;
+    }
+    
+    return clean;
 }
 
 function loginSuccess() {
