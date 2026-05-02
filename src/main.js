@@ -14,26 +14,42 @@ const firebaseConfig = {
 };
 
 // INITIALIZATION
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-const auth = getAuth();
+const loader = document.getElementById('app-loader');
+const hideLoader = () => {
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.classList.add('hidden'), 500);
+    }
+};
+
+let app, db, auth;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    auth = getAuth();
+} catch (e) {
+    console.error("Firebase Init Error:", e);
+    const loaderText = document.querySelector('#app-loader p');
+    if (loaderText) loaderText.innerText = "Error initializing system. Please check your connection.";
+}
 
 let isAuthReady = false;
 
 // Sign in anonymously
-signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
+if (auth) {
+    signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
 
-onAuthStateChanged(auth, (user) => {
-    isAuthReady = true;
-    console.log("Auth state changed:", user ? "Signed in" : "Signed out");
-});
-
-// Hide loader once JS is running
-const loader = document.getElementById('app-loader');
-if (loader) {
-    loader.style.opacity = '0';
-    setTimeout(() => loader.classList.add('hidden'), 500);
+    onAuthStateChanged(auth, (user) => {
+        isAuthReady = true;
+        console.log("Auth state changed:", user ? "Signed in" : "Signed out");
+        hideLoader();
+    });
+} else {
+    hideLoader();
 }
+
+// Timeout to hide loader anyway if auth takes too long
+setTimeout(hideLoader, 5000);
 
 const OperationType = {
   CREATE: 'create',
@@ -711,7 +727,7 @@ function renderProductFeed() {
 function buyFromFeed(shopId, pId, name, price, image) {
     const shop = SHOPS.find(s => s.id === shopId);
     activeShop = shop;
-    openBuyModal(pId, name, price, image);
+    openBuyModal(pId, name, price, image, shopId);
 }
 
 // SHOP DETAIL
@@ -768,7 +784,7 @@ function renderProducts(shopId) {
                 <div class="product-info">
                     <h3>${p.name}</h3>
                     <div class="product-price">$${p.price}</div>
-                    <button class="btn-buy" onclick="openBuyModal('${p.id}', '${p.name}', ${p.price}, '${p.image}')">
+                    <button class="btn-buy" onclick="openBuyModal('${p.id}', '${p.name}', ${p.price}, '${p.image}', '${p.shopId}')">
                         ${t.buyNow}
                     </button>
                 </div>
@@ -780,8 +796,8 @@ function renderProducts(shopId) {
 }
 
 // BUY MODAL
-function openBuyModal(id, name, price, image) {
-    currentProductToBuy = { id, name, price, image };
+function openBuyModal(id, name, price, image, shopId) {
+    currentProductToBuy = { id, name, price, image, shopId };
     document.getElementById('modal-product-info').innerHTML = `
         <div style="display:flex; gap:15px; align-items:center; margin-bottom:20px;">
             <img src="${image}" style="width:60px; height:60px; border-radius:8px; object-fit:cover; border: 2px solid #000;">
@@ -818,11 +834,14 @@ async function submitOrder() {
         return;
     }
 
-    const shopName = shopSettingsOverrides[activeShop.id]?.name || activeShop.name;
+    const shop = SHOPS.find(s => s.id === currentProductToBuy.shopId);
+    const shopDisplayName = shopSettingsOverrides[currentProductToBuy.shopId]?.name || shop?.name || 'Unknown Store';
+    
     const orderData = {
         productName: currentProductToBuy.name,
         price: Number(currentProductToBuy.price),
-        shopName: shopName,
+        shopName: shopDisplayName,
+        shopId: currentProductToBuy.shopId,
         phone: loggedInUser.phone,
         customerName: loggedInUser.name,
         location: location,
@@ -894,11 +913,9 @@ async function handleRegister() {
         return;
     }
     
-    if (!isAuthReady) {
-        console.log("Auth not ready yet");
-        showToast(currentLang === 'ar' ? 'جاري تهيئة النظام... حاول مرة أخرى' : "Initializing system... please try again in a few seconds.");
-        return;
-    }
+    // We don't block on isAuthReady anymore as Firestore handles its own readiness,
+    // but we log status for debugging.
+    console.log("Current auth ready state:", isAuthReady);
 
     const name = document.getElementById('reg-name').value.trim();
     const phoneInput = document.getElementById('reg-phone').value.trim();
@@ -958,10 +975,8 @@ async function handleLogin() {
     console.log("handleLogin started");
     if (!db) return;
     
-    if (!isAuthReady) {
-        showToast(currentLang === 'ar' ? 'جاري تهيئة النظام... حاول مرة أخرى' : "Initializing system... please try again.");
-        return;
-    }
+    // Non-blocking log
+    console.log("Auth ready during login:", isAuthReady);
 
     const phoneInput = document.getElementById('login-phone').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
@@ -1047,6 +1062,11 @@ function loginSuccess() {
     if(loggedInShopId) {
         document.getElementById('seller-tools').classList.remove('hidden');
         renderAdminInventory();
+    }
+    
+    // Refresh basket tracking if view is active
+    if (currentView === 'basket') {
+        handleBasketAutoTrack();
     }
     
     showToast();
@@ -1356,7 +1376,7 @@ function handleBasketAutoTrack() {
                                 <p style="color: #333; font-style: italic; line-height: 1.5; font-size: 14px;">"${o.masterMessage}"</p>
                             </div>
                         ` : `
-                            <p style="font-size: 12px; color: #999; margin-top: 10px; font-style: italic;">Waiting for validation from Aneeq Master...</p>
+                            <p style="font-size: 12px; color: #999; margin-top: 10px; font-style: italic;">${t.waitMaster}</p>
                         `}
                     </div>
                 `;
