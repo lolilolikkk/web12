@@ -348,7 +348,14 @@
 
     <script type="module" src="src/main.js"></script>
     <script>
-        console.log("Aneeq: index.html fully parsed.");
+        window.addEventListener('load', () => {
+            console.log("Window loaded. Checking for global functions...");
+            if (typeof window.showView !== 'function') {
+                console.error("showView is not defined! main.js might have failed to load or export.");
+            } else {
+                console.log("showView is ready.");
+            }
+        });
     </script>
 </body>
 </html>
