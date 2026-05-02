@@ -46,33 +46,6 @@ try {
 
 let isAuthReady = false;
 
-// Global Exports - For direct access from HTML onclick
-window.toggleAuthMode = toggleAuthMode;
-window.handleBasketAutoTrack = handleBasketAutoTrack;
-window.handleLogin = handleLogin;
-window.handleRegister = handleRegister;
-window.saveProfileLocation = saveProfileLocation;
-window.logout = logout;
-window.showView = showView;
-window.openShop = openShop;
-window.buyFromFeed = buyFromFeed;
-window.openBuyModal = openBuyModal;
-window.closeModal = closeModal;
-window.submitOrder = submitOrder;
-window.handleSellerLogin = handleSellerLogin;
-window.addNewProduct = addNewProduct;
-window.deleteProduct = deleteProduct;
-window.handleTrackOrder = handleBasketAutoTrack;
-window.handleMasterLogin = handleMasterLogin;
-window.masterLogout = masterLogout;
-window.updateOrderStatus = updateOrderStatus;
-window.deleteOrderByID = deleteOrderByID;
-window.setLanguage = setLanguage;
-window.filterByCategory = filterByCategory;
-window.previewProductImage = previewProductImage;
-window.previewStoreImage = previewStoreImage;
-window.saveStoreSettings = saveStoreSettings;
-
 // Sign in anonymously
 if (auth) {
     signInAnonymously(auth).catch(e => console.warn("Anonymous Auth disabled:", e.message));
@@ -1583,4 +1556,31 @@ async function deleteOrderByID(orderId) {
         handleFirestoreError(error, OperationType.DELETE, `orders/${orderId}`);
     }
 }
+
+// Global Exports - For direct access from HTML onclick
+window.toggleAuthMode = toggleAuthMode;
+window.handleBasketAutoTrack = handleBasketAutoTrack;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.saveProfileLocation = saveProfileLocation;
+window.logout = logout;
+window.showView = showView;
+window.openShop = openShop;
+window.buyFromFeed = buyFromFeed;
+window.openBuyModal = openBuyModal;
+window.closeModal = closeModal;
+window.submitOrder = submitOrder;
+window.handleSellerLogin = handleSellerLogin;
+window.addNewProduct = addNewProduct;
+window.deleteProduct = deleteProduct;
+window.handleTrackOrder = handleBasketAutoTrack;
+window.handleMasterLogin = handleMasterLogin;
+window.masterLogout = masterLogout;
+window.updateOrderStatus = updateOrderStatus;
+window.deleteOrderByID = deleteOrderByID;
+window.setLanguage = setLanguage;
+window.filterByCategory = filterByCategory;
+window.previewProductImage = previewProductImage;
+window.previewStoreImage = previewStoreImage;
+window.saveStoreSettings = saveStoreSettings;
 
