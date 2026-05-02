@@ -226,6 +226,7 @@ const TRANSLATIONS = {
         statusAccepted: "Accepted",
         statusRefused: "Refused",
         phLabel: "PH:",
+        sellerHint: "Sellers: Enter any phone number + your Store Passkey as password.",
     },
     ar: {
         storeSettings: "إعدادات المتجر",
@@ -322,6 +323,7 @@ const TRANSLATIONS = {
         statusAccepted: "مقبول",
         statusRefused: "مرفوض",
         phLabel: "هاتف:",
+        sellerHint: "للبائعين: أدخل أي رقم هاتف + مفتاح المتجر ككلمة مرور.",
     }
 };
 
@@ -452,6 +454,9 @@ function updateStaticTranslations() {
             
             const loginBtn = authCard.querySelector('#form-login button');
             if(loginBtn) loginBtn.innerText = t.login;
+
+            const sellerHint = document.getElementById('seller-login-hint');
+            if (sellerHint) sellerHint.innerText = t.sellerHint;
             
             const rn = document.getElementById('reg-name');
             const rp = document.getElementById('reg-phone');
