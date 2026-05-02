@@ -6,6 +6,19 @@
     <title>aneeq | Marketplace</title>
     <link rel="stylesheet" href="src/index.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                        ar: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -334,5 +347,15 @@
     <div id="toast" class="toast hidden">Request Sent to Master!</div>
 
     <script type="module" src="src/main.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            console.log("Window loaded. Checking for global functions...");
+            if (typeof window.showView !== 'function') {
+                console.error("showView is not defined! main.js might have failed to load or export.");
+            } else {
+                console.log("showView is ready.");
+            }
+        });
+    </script>
 </body>
 </html>

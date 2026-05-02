@@ -1,6 +1,8 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'firebase/firestore';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, onSnapshot, serverTimestamp, getDocFromServer, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+console.log("Aneeq: main.js execution started at " + new Date().toISOString());
 
 // Added global error handler for debugging
 window.addEventListener('error', (event) => {
@@ -12,6 +14,33 @@ window.addEventListener('error', (event) => {
         setTimeout(() => toast.classList.add('hidden'), 5000);
     }
 });
+
+// Global Exports - Define early for HTML onclick availability
+window.toggleAuthMode = (...args) => toggleAuthMode(...args);
+window.handleBasketAutoTrack = (...args) => handleBasketAutoTrack(...args);
+window.handleLogin = (...args) => handleLogin(...args);
+window.handleRegister = (...args) => handleRegister(...args);
+window.saveProfileLocation = (...args) => saveProfileLocation(...args);
+window.logout = (...args) => logout(...args);
+window.showView = (...args) => showView(...args);
+window.openShop = (...args) => openShop(...args);
+window.buyFromFeed = (...args) => buyFromFeed(...args);
+window.openBuyModal = (...args) => openBuyModal(...args);
+window.closeModal = (...args) => closeModal(...args);
+window.submitOrder = (...args) => submitOrder(...args);
+window.handleSellerLogin = (...args) => handleSellerLogin(...args);
+window.addNewProduct = (...args) => addNewProduct(...args);
+window.deleteProduct = (...args) => deleteProduct(...args);
+window.handleTrackOrder = (...args) => handleBasketAutoTrack(...args);
+window.handleMasterLogin = (...args) => handleMasterLogin(...args);
+window.masterLogout = (...args) => masterLogout(...args);
+window.updateOrderStatus = (...args) => updateOrderStatus(...args);
+window.deleteOrderByID = (...args) => deleteOrderByID(...args);
+window.setLanguage = (...args) => setLanguage(...args);
+window.filterByCategory = (...args) => filterByCategory(...args);
+window.previewProductImage = (...args) => previewProductImage(...args);
+window.previewStoreImage = (...args) => previewStoreImage(...args);
+window.saveStoreSettings = (...args) => saveStoreSettings(...args);
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -1558,29 +1587,5 @@ async function deleteOrderByID(orderId) {
 }
 
 // Global Exports - For direct access from HTML onclick
-window.toggleAuthMode = toggleAuthMode;
-window.handleBasketAutoTrack = handleBasketAutoTrack;
-window.handleLogin = handleLogin;
-window.handleRegister = handleRegister;
-window.saveProfileLocation = saveProfileLocation;
-window.logout = logout;
-window.showView = showView;
-window.openShop = openShop;
-window.buyFromFeed = buyFromFeed;
-window.openBuyModal = openBuyModal;
-window.closeModal = closeModal;
-window.submitOrder = submitOrder;
-window.handleSellerLogin = handleSellerLogin;
-window.addNewProduct = addNewProduct;
-window.deleteProduct = deleteProduct;
-window.handleTrackOrder = handleBasketAutoTrack;
-window.handleMasterLogin = handleMasterLogin;
-window.masterLogout = masterLogout;
-window.updateOrderStatus = updateOrderStatus;
-window.deleteOrderByID = deleteOrderByID;
-window.setLanguage = setLanguage;
-window.filterByCategory = filterByCategory;
-window.previewProductImage = previewProductImage;
-window.previewStoreImage = previewStoreImage;
-window.saveStoreSettings = saveStoreSettings;
+// Assignments moved to top for availability
 
