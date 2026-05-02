@@ -64,8 +64,8 @@ function handleFirestoreError(error, operationType, path) {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
+      userId: auth?.currentUser?.uid || null,
+      email: auth?.currentUser?.email || null,
     },
     operationType,
     path
@@ -306,7 +306,16 @@ const TRANSLATIONS = {
 let currentView = "home";
 let activeShop = null;
 let loggedInShopId = localStorage.getItem('aneeq_seller_id');
-let loggedInUser = JSON.parse(localStorage.getItem('aneeq_user') || 'null');
+let loggedInUser = null;
+try {
+    const savedUser = localStorage.getItem('aneeq_user');
+    if (savedUser && savedUser !== 'undefined') {
+        loggedInUser = JSON.parse(savedUser);
+    }
+} catch (e) {
+    console.error("Error parsing loggedInUser from localStorage:", e);
+    localStorage.removeItem('aneeq_user');
+}
 let trackOrdersUnsubscribe = null;
 let isMasterLoggedIn = localStorage.getItem('aneeq_master_session') === 'true';
 let currentProductToBuy = null;
@@ -315,44 +324,58 @@ let currentCategory = 'all';
 
 // INIT
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Initialize real-time settings listener
-    initSettingsListener();
-    
-    // 2. Set language
-    setLanguage(currentLang);
-    
-    // 3. Recovery of states
-    if (loggedInUser) {
-        // If logged in as user, update UI
-        updateProfileUI();
-    }
-
-    if (loggedInShopId) {
-        const id = loggedInShopId; 
-        const shop = SHOPS.find(s => s.id === id);
-        if (shop) {
-            document.getElementById('seller-tools').classList.remove('hidden');
-            renderAdminInventory();
-        } else {
-            loggedInShopId = null;
-            localStorage.removeItem('aneeq_seller_id');
+    console.log("DOM Content Loaded. Initializing app...");
+    try {
+        // 1. Initialize real-time settings listener
+        initSettingsListener();
+        
+        // 2. Set language
+        setLanguage(currentLang);
+        
+        // 3. Recovery of states
+        if (loggedInUser) {
+            updateProfileUI();
         }
-    }
 
-    if (isMasterLoggedIn) {
-        document.getElementById('master-login').classList.add('hidden');
-        document.getElementById('master-dashboard').classList.remove('hidden');
-        renderMasterOrders();
+        if (loggedInShopId) {
+            const id = loggedInShopId; 
+            const shop = SHOPS.find(s => s.id === id);
+            if (shop) {
+                const sellerTools = document.getElementById('seller-tools');
+                if (sellerTools) sellerTools.classList.remove('hidden');
+                renderAdminInventory();
+            } else {
+                loggedInShopId = null;
+                localStorage.removeItem('aneeq_seller_id');
+            }
+        }
+
+        if (isMasterLoggedIn) {
+            const masterLogin = document.getElementById('master-login');
+            const masterDashboard = document.getElementById('master-dashboard');
+            if (masterLogin) masterLogin.classList.add('hidden');
+            if (masterDashboard) masterDashboard.classList.remove('hidden');
+            renderMasterOrders();
+        }
+        
+        // Check URL hash on load
+        const hash = window.location.hash.substring(1);
+        const validViews = ['home', 'marketplace', 'basket', 'account', 'master'];
+        if (hash && validViews.includes(hash)) {
+            showView(hash);
+        } else {
+            showView('home');
+        }
+        
+        if (typeof setupAdminSelect === 'function') {
+            setupAdminSelect();
+        }
+    } catch (e) {
+        console.error("Error during app initialization:", e);
+    } finally {
+        // Ensure loader is hidden even if init has issues
+        setTimeout(hideLoader, 1000);
     }
-    
-    // Check URL hash on load
-    const hash = window.location.hash.substring(1);
-    if (hash && ['home', 'marketplace', 'track', 'account', 'master'].includes(hash)) {
-        showView(hash);
-    } else {
-        showView('home');
-    }
-    setupAdminSelect();
 });
 
 // LANGUAGE
@@ -376,194 +399,257 @@ function setLanguage(lang) {
 }
 
 function updateStaticTranslations() {
-    const t = TRANSLATIONS[currentLang];
-    
-    // Nav
-    const navButtons = document.querySelectorAll('.navbar nav button');
-    if(navButtons.length >= 3) {
-        navButtons[0].innerText = t.marketplace;
-        navButtons[1].innerText = t.basket;
-        navButtons[2].innerText = t.account;
-    }
-    
-    // Account View
-    const authCard = document.getElementById('account-auth');
-    if(authCard) {
-        document.getElementById('tab-login').innerText = t.login;
-        document.getElementById('tab-register').innerText = t.register;
+    try {
+        const t = TRANSLATIONS[currentLang];
+        if (!t) return;
         
-        document.getElementById('login-phone').placeholder = t.phone;
-        document.getElementById('login-pass').placeholder = t.password;
-        const loginBtn = authCard.querySelector('#form-login button');
-        if(loginBtn) loginBtn.innerText = t.login;
+        // Nav
+        const navButtons = document.querySelectorAll('.navbar nav button');
+        if(navButtons.length >= 3) {
+            navButtons[0].innerText = t.marketplace;
+            navButtons[1].innerText = t.basket;
+            navButtons[2].innerText = t.account;
+        }
         
-        document.getElementById('reg-name').placeholder = t.fullName;
-        document.getElementById('reg-phone').placeholder = t.phone;
-        document.getElementById('reg-pass').placeholder = t.password;
-        const regBtn = authCard.querySelector('#form-register button');
-        if(regBtn) regBtn.innerText = t.createAccount;
-    }
-    
-    const profileView = document.getElementById('account-profile');
-    if(profileView) {
-       document.getElementById('user-display-name').innerText = loggedInUser ? loggedInUser.name : t.myProfile;
-       profileView.querySelectorAll('h3')[0].innerText = t.contactInfo;
-       profileView.querySelectorAll('h3')[1].innerText = t.shippingLocation;
-       document.getElementById('profile-location').placeholder = t.enterLocation;
-       const updateLocBtn = profileView.querySelector('button[onclick="saveProfileLocation()"]');
-       if(updateLocBtn) updateLocBtn.innerText = t.updateLocation;
-    }
-
-    // Basket View
-    const basketView = document.getElementById('view-basket');
-    if(basketView) {
-        const basketTitle = document.getElementById('basket-title');
-        if(basketTitle) basketTitle.innerHTML = currentLang === 'ar' ? `سلتي <span class="accent-text">الخاصة</span>` : `My <span class="accent-text">Basket</span>`;
-        document.getElementById('basket-status-title').innerText = t.requestStatus;
-    }
-
-    // Modal
-    const buyModal = document.querySelector('.modal-content');
-    if(buyModal) {
-        document.getElementById('buy-modal-title').innerText = t.purchaseRequest;
-        document.getElementById('buy-modal-hint').innerText = t.deliveryHint;
-        document.getElementById('customer-location').placeholder = t.enterLocation;
-        buyModal.querySelector('.btn-primary').innerText = t.confirmRequest;
-    }
-    // Home
-    const homeHero = document.querySelector('.home-hero');
-    if(homeHero) {
-        homeHero.querySelector('h1').innerHTML = `${t.heroTitle} <span class="accent-text">${t.heroIdentity}</span>`;
-        homeHero.querySelector('p').innerText = t.heroText;
-        homeHero.querySelectorAll('button')[0].innerText = t.enterMarketplace;
-        homeHero.querySelectorAll('button')[1].innerText = t.basket;
-    }
-    
-    const features = document.querySelectorAll('.feature-card');
-    if(features.length >= 3) {
-        features[0].querySelector('h3').innerText = t.curatedExcellence;
-        features[0].querySelector('p').innerText = t.curatedText;
-        features[1].querySelector('h3').innerText = t.directConnect;
-        features[1].querySelector('p').innerText = t.directText;
-        features[2].querySelector('h3').innerText = t.globalVision;
-        features[2].querySelector('p').innerText = t.globalText;
-    }
-    
-    const promo = document.querySelector('.home-promo');
-    if(promo) {
-        promo.querySelector('h2').innerText = t.promoTitle;
-        promo.querySelector('p').innerText = t.promoText;
-        promo.querySelector('button').innerText = t.discoverBrands;
-    }
-    
-    // Categories
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        const cat = btn.dataset.category;
-        if (cat === 'all') btn.innerText = t.all;
-        if (cat === 'Men') btn.innerText = t.men;
-        if (cat === 'Women') btn.innerText = t.women;
-        if (cat === 'Kids') btn.innerText = t.kids;
-    });
-
-    // Marketplace
-    const mpHero = document.querySelector('#view-marketplace .hero');
-    if(mpHero) {
-        mpHero.querySelector('h1').innerText = t.independentBrands;
-        mpHero.querySelector('p').innerText = t.curatedCollections;
-    }
-    const mpFeedHeader = document.querySelector('.feed-header');
-    if(mpFeedHeader) {
-        mpFeedHeader.querySelector('h2').innerText = t.marketplaceFeed;
-    }
-    
-    // Track
-    const trackCard = document.querySelector('#view-track .auth-card');
-    if(trackCard) {
-        trackCard.querySelector('h2').innerText = t.trackTitle;
-        trackCard.querySelector('p').innerText = t.trackText;
-        trackCard.querySelector('input').placeholder = t.phonePlaceholder;
-        trackCard.querySelector('button').innerText = t.viewStatus;
-    }
-    const trackResults = document.querySelector('#track-results');
-    if(trackResults) {
-        trackResults.querySelector('h3').innerText = t.requestStatus;
-    }
-    
-    // Seller Admin
-    const adminLogin = document.getElementById('admin-login');
-    if(adminLogin) {
-        adminLogin.querySelector('h2').innerText = t.sellerLogin;
-        document.getElementById('admin-pass').placeholder = t.storePasskey;
-        adminLogin.querySelector('button').innerText = t.enterDashboard;
-    }
-    const adminDashboard = document.getElementById('admin-dashboard');
-    if(adminDashboard) {
-        adminDashboard.querySelector('.btn-outline').innerText = t.logout;
+        // Account View
+        const authCard = document.getElementById('account-auth');
+        if(authCard) {
+            const tLogin = document.getElementById('tab-login');
+            const tRegister = document.getElementById('tab-register');
+            if (tLogin) tLogin.innerText = t.login;
+            if (tRegister) tRegister.innerText = t.register;
+            
+            const lp = document.getElementById('login-phone');
+            const lps = document.getElementById('login-pass');
+            if (lp) lp.placeholder = t.phone;
+            if (lps) lps.placeholder = t.password;
+            
+            const loginBtn = authCard.querySelector('#form-login button');
+            if(loginBtn) loginBtn.innerText = t.login;
+            
+            const rn = document.getElementById('reg-name');
+            const rp = document.getElementById('reg-phone');
+            const rps = document.getElementById('reg-pass');
+            if (rn) rn.placeholder = t.fullName;
+            if (rp) rp.placeholder = t.phone;
+            if (rps) rps.placeholder = t.password;
+            
+            const regBtn = authCard.querySelector('#form-register button');
+            if(regBtn) regBtn.innerText = t.createAccount;
+        }
         
-        const settingsCard = adminDashboard.querySelector('.admin-settings-card');
-        if(settingsCard) {
-            settingsCard.querySelector('h3').innerText = t.storeSettings;
-            settingsCard.querySelectorAll('label')[0].innerText = currentLang === 'ar' ? 'اسم المتجر' : 'Store Display Name';
-            settingsCard.querySelector('#store-name-input').placeholder = currentLang === 'ar' ? 'أدخل اسم المتجر' : 'Enter Store Name';
-            settingsCard.querySelector('.upload-text').innerText = t.storeHero;
-            settingsCard.querySelector('button').innerText = t.saveStore;
-
-            // Pre-fill current name from memory or SHOPS
-            const shop = SHOPS.find(s => s.id === loggedInShopId);
-            const currentName = shopSettingsOverrides[loggedInShopId]?.name || shop?.name || "";
-            document.getElementById('store-name-input').value = currentName;
+        const profileView = document.getElementById('account-profile');
+        if(profileView) {
+           const udn = document.getElementById('user-display-name');
+           if (udn) udn.innerText = loggedInUser ? loggedInUser.name : t.myProfile;
+           
+           const h3s = profileView.querySelectorAll('h3');
+           if (h3s.length >= 1) h3s[0].innerText = t.contactInfo;
+           if (h3s.length >= 2) h3s[1].innerText = t.shippingLocation;
+           
+           const pl = document.getElementById('profile-location');
+           if (pl) pl.placeholder = t.enterLocation;
+           
+           const updateLocBtn = profileView.querySelector('button[onclick="saveProfileLocation()"]');
+           if(updateLocBtn) updateLocBtn.innerText = t.updateLocation;
         }
 
-        adminDashboard.querySelectorAll('.cardi h3')[1].innerText = t.addNewProduct;
-        document.getElementById('p-name').placeholder = t.productName;
-        document.getElementById('p-price').placeholder = t.price;
-        adminDashboard.querySelector('.admin-form button').innerText = t.publishProduct;
-        adminDashboard.querySelectorAll('.cardi h3')[1].innerText = t.inventory;
+        // Basket View
+        const basketView = document.getElementById('view-basket');
+        if(basketView) {
+            const basketTitle = document.getElementById('basket-title');
+            if(basketTitle) basketTitle.innerHTML = currentLang === 'ar' ? `سلتي <span class="accent-text">الخاصة</span>` : `My <span class="accent-text">Basket</span>`;
+            const bst = document.getElementById('basket-status-title');
+            if (bst) bst.innerText = t.requestStatus;
+        }
 
-        const catSelect = document.getElementById('p-cat');
-        if (catSelect) {
-            catSelect.options[0].text = currentLang === 'ar' ? 'اختر الفئة' : 'Select Category';
-            catSelect.options[1].text = t.men;
-            catSelect.options[2].text = t.women;
-            catSelect.options[3].text = t.kids;
+        // Modal
+        const buyModal = document.querySelector('.modal-content');
+        if(buyModal) {
+            const bmt = document.getElementById('buy-modal-title');
+            const bmh = document.getElementById('buy-modal-hint');
+            const cl = document.getElementById('customer-location');
+            if (bmt) bmt.innerText = t.purchaseRequest;
+            if (bmh) bmh.innerText = t.deliveryHint;
+            if (cl) cl.placeholder = t.enterLocation;
+            const bconfirm = buyModal.querySelector('.btn-primary');
+            if (bconfirm) bconfirm.innerText = t.confirmRequest;
         }
-    }
-    
-    // Master Admin
-    const masterLogin = document.getElementById('master-login');
-    if(masterLogin) {
-        masterLogin.querySelector('h2').innerText = t.masterLogin;
-        masterLogin.querySelector('p').innerText = t.authorizedOnly;
-        document.getElementById('master-pass').placeholder = t.verifyIdentity; // Wait, text is "Master Key" originally
-        masterLogin.querySelector('button').innerText = t.verifyIdentity;
-    }
-    const masterDashboard = document.getElementById('master-dashboard');
-    if(masterDashboard) {
-        masterDashboard.querySelector('h2').innerText = t.commandCenter;
-    }
-    
-    // Toast
-    document.getElementById('toast').innerText = t.toastSent;
-    
-    // Footer
-    const footer = document.querySelector('footer');
-    if(footer) {
-        footer.querySelector('.footer-brand p').innerText = t.footerText;
-        footer.querySelectorAll('.footer-links h4')[0].innerText = t.platform;
-        const footerLinks = footer.querySelectorAll('.footer-links button');
-        if(footerLinks.length >= 3) {
-            footerLinks[0].innerText = t.home;
-            footerLinks[1].innerText = t.marketplace;
-            footerLinks[2].innerText = t.sellerPortal;
+        
+        // Home
+        const homeHero = document.querySelector('.home-hero');
+        if(homeHero) {
+            const h1 = homeHero.querySelector('h1');
+            const p = homeHero.querySelector('p');
+            const btns = homeHero.querySelectorAll('button');
+            if (h1) h1.innerHTML = `${t.heroTitle} <span class="accent-text">${t.heroIdentity}</span>`;
+            if (p) p.innerText = t.heroText;
+            if (btns.length >= 1) btns[0].innerText = t.enterMarketplace;
+            if (btns.length >= 2) btns[1].innerText = t.basket;
         }
-        footer.querySelector('.footer-legal h4').innerText = t.support;
-        const legalPs = footer.querySelectorAll('.footer-legal p');
-        if(legalPs.length >= 2) {
-            legalPs[0].innerText = t.contactUs;
-            legalPs[1].innerText = t.terms;
+        
+        const features = document.querySelectorAll('.feature-card');
+        if(features.length >= 3) {
+            const f1h = features[0].querySelector('h3');
+            const f1p = features[0].querySelector('p');
+            if (f1h) f1h.innerText = t.curatedExcellence;
+            if (f1p) f1p.innerText = t.curatedText;
+            
+            const f2h = features[1].querySelector('h3');
+            const f2p = features[1].querySelector('p');
+            if (f2h) f2h.innerText = t.directConnect;
+            if (f2p) f2p.innerText = t.directText;
+            
+            const f3h = features[2].querySelector('h3');
+            const f3p = features[2].querySelector('p');
+            if (f3h) f3h.innerText = t.globalVision;
+            if (f3p) f3p.innerText = t.globalText;
         }
+
+        const promo = document.querySelector('.home-promo');
+        if(promo) {
+            const h2 = promo.querySelector('h2');
+            const p = promo.querySelector('p');
+            const btn = promo.querySelector('button');
+            if (h2) h2.innerText = t.promoTitle;
+            if (p) p.innerText = t.promoText;
+            if (btn) btn.innerText = t.discoverBrands;
+        }
+        
+        // Categories
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            const cat = btn.dataset.category;
+            if (cat === 'all') btn.innerText = t.all;
+            if (cat === 'Men') btn.innerText = t.men;
+            if (cat === 'Women') btn.innerText = t.women;
+            if (cat === 'Kids') btn.innerText = t.kids;
+        });
+
+        // Marketplace
+        const marketplaceView = document.getElementById('view-marketplace');
+        if(marketplaceView) {
+            const mpHero = marketplaceView.querySelector('.hero');
+            if(mpHero) {
+                const h1 = mpHero.querySelector('h1');
+                const p = mpHero.querySelector('p');
+                if (h1) h1.innerText = t.independentBrands;
+                if (p) p.innerText = t.curatedCollections;
+            }
+            const mpFeedHeader = marketplaceView.querySelector('.feed-header');
+            if(mpFeedHeader) {
+                const h2 = mpFeedHeader.querySelector('h2');
+                if (h2) h2.innerText = t.marketplaceFeed;
+            }
+        }
+        
+        // Seller Admin
+        const adminLogin = document.getElementById('admin-login');
+        if(adminLogin) {
+            const h2 = adminLogin.querySelector('h2');
+            const p = adminLogin.querySelector('p');
+            const passInput = document.getElementById('admin-pass');
+            const btn = adminLogin.querySelector('button');
+            if (h2) h2.innerText = t.sellerLogin;
+            if (passInput) passInput.placeholder = t.storePasskey;
+            if (btn) btn.innerText = t.enterDashboard;
+        }
+        const adminDashboard = document.getElementById('admin-dashboard');
+        if(adminDashboard) {
+            const logoutBtn = adminDashboard.querySelector('.btn-outline');
+            if (logoutBtn) logoutBtn.innerText = t.logout;
+            
+            const settingsCard = adminDashboard.querySelector('.admin-settings-card');
+            if(settingsCard) {
+                const h3 = settingsCard.querySelector('h3');
+                if (h3) h3.innerText = t.storeSettings;
+                const labels = settingsCard.querySelectorAll('label');
+                if (labels.length >= 1) labels[0].innerText = currentLang === 'ar' ? 'اسم المتجر' : 'Store Display Name';
+                const sni = document.getElementById('store-name-input');
+                if (sni) sni.placeholder = currentLang === 'ar' ? 'أدخل اسم المتجر' : 'Enter Store Name';
+                const ut = settingsCard.querySelector('.upload-text');
+                if (ut) ut.innerText = t.storeHero;
+                const saveBtn = settingsCard.querySelector('button');
+                if (saveBtn) saveBtn.innerText = t.saveStore;
+
+                // Pre-fill current name from memory or SHOPS
+                const shop = SHOPS.find(s => s.id === loggedInShopId);
+                const currentName = shopSettingsOverrides[loggedInShopId]?.name || shop?.name || "";
+                if (sni) sni.value = currentName;
+            }
+
+            const cardis = adminDashboard.querySelectorAll('.cardi');
+            if (cardis.length >= 2) {
+                const h3Add = cardis[0].querySelector('h3');
+                if (h3Add) h3Add.innerText = t.addNewProduct;
+                const hn = document.getElementById('p-name');
+                const hp = document.getElementById('p-price');
+                if (hn) hn.placeholder = t.productName;
+                if (hp) hp.placeholder = t.price;
+                const pubBtn = cardis[0].querySelector('.admin-form button');
+                if (pubBtn) pubBtn.innerText = t.publishProduct;
+
+                const h3Inv = cardis[1].querySelector('h3');
+                if (h3Inv) h3Inv.innerText = t.inventory;
+            }
+
+            const catSelect = document.getElementById('p-cat');
+            if (catSelect && catSelect.options.length >= 4) {
+                catSelect.options[0].text = currentLang === 'ar' ? 'اختر الفئة' : 'Select Category';
+                catSelect.options[1].text = t.men;
+                catSelect.options[2].text = t.women;
+                catSelect.options[3].text = t.kids;
+            }
+        }
+        
+        // Master Admin
+        const masterLogin = document.getElementById('master-login');
+        if(masterLogin) {
+            const h2 = masterLogin.querySelector('h2');
+            const p = masterLogin.querySelector('p');
+            const btn = masterLogin.querySelector('button');
+            const mpk = document.getElementById('master-pass');
+            if (h2) h2.innerText = t.masterLogin;
+            if (p) p.innerText = t.authorizedOnly;
+            if (mpk) mpk.placeholder = t.verifyIdentity;
+            if (btn) btn.innerText = t.verifyIdentity;
+        }
+        const masterDashboard = document.getElementById('master-dashboard');
+        if(masterDashboard) {
+            const h2 = masterDashboard.querySelector('h2');
+            if (h2) h2.innerText = t.commandCenter;
+        }
+        
+        // Toast
+        const toast = document.getElementById('toast');
+        if (toast) toast.innerText = t.toastSent;
+        
+        // Footer
+        const footer = document.querySelector('footer');
+        if(footer) {
+            const fp = footer.querySelector('.footer-brand p');
+            const fhl = footer.querySelectorAll('.footer-links h4');
+            const flb = footer.querySelectorAll('.footer-links button');
+            const flh = footer.querySelector('.footer-legal h4');
+            const flp = footer.querySelectorAll('.footer-legal p');
+
+            if (fp) fp.innerText = t.footerText;
+            if (fhl.length >= 1) fhl[0].innerText = t.platform;
+            if (flb.length >= 3) {
+                flb[0].innerText = t.home;
+                flb[1].innerText = t.marketplace;
+                flb[2].innerText = t.sellerPortal;
+            }
+            if (flh) flh.innerText = t.support;
+            if (flp.length >= 2) {
+                flp[0].innerText = t.contactUs;
+                flp[1].innerText = t.terms;
+            }
+        }
+    } catch (e) {
+        console.error("Error in updateStaticTranslations:", e);
     }
 }
+
 
 // Listen for hash changes
 window.addEventListener('hashchange', () => {

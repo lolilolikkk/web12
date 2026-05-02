@@ -26,6 +26,17 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script>
+        // Fallback: Ensure loader hides even if main script fails
+        setTimeout(() => {
+            const loader = document.getElementById('app-loader');
+            if (loader && !loader.classList.contains('hidden')) {
+                console.warn("Loader forced to hide via fallback timeout.");
+                loader.style.opacity = '0';
+                setTimeout(() => loader.classList.add('hidden'), 500);
+            }
+        }, 8000);
+    </script>
 </head>
 <body>
     <div id="app-loader">
