@@ -1022,6 +1022,7 @@ function logout() {
 }
 
 // Global Exports
+window.toggleAuthMode = toggleAuthMode;
 window.handleBasketAutoTrack = handleBasketAutoTrack;
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
