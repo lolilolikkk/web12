@@ -43,6 +43,7 @@
         "phone": { "type": "string" },
         "password": { "type": "string" },
         "location": { "type": "string" },
+        "shopId": { "type": "string", "description": "Linked shop ID if user is a seller" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "phone", "password"]

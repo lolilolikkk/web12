@@ -41,6 +41,7 @@ window.filterByCategory = (...args) => filterByCategory(...args);
 window.previewProductImage = (...args) => previewProductImage(...args);
 window.previewStoreImage = (...args) => previewStoreImage(...args);
 window.saveStoreSettings = (...args) => saveStoreSettings(...args);
+window.togglePass = (...args) => togglePass(...args);
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -120,28 +121,36 @@ const SHOPS = [
         name: "Urban Streetwear Co.",
         logo: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=200",
         hero: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1200",
-        pass: "11"
+        pass: "11",
+        phone: "+964000000001",
+        category: "Men"
     },
     {
         id: "shop_002",
         name: "Minimalist Wardrobe",
         logo: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=200",
         hero: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200",
-        pass: "minimal88"
+        pass: "minimal88",
+        phone: "+964000000002",
+        category: "Women"
     },
     {
         id: "shop_003",
         name: "Vintage Vault",
         logo: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=200",
         hero: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200",
-        pass: "retro99"
+        pass: "retro99",
+        phone: "+964000000003",
+        category: "Men"
     },
     {
         id: "shop_004",
         name: "Zen Athleisure",
         logo: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=200",
         hero: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200",
-        pass: "zen123"
+        pass: "zen123",
+        phone: "+964000000004",
+        category: "Women"
     }
 ];
 
@@ -154,7 +163,6 @@ const TRANSLATIONS = {
         saveStore: "Update Store Front",
         marketplace: "Marketplace",
         trackOrder: "Track Order",
-        sellerPortal: "Seller Portal",
         home: "Home",
         heroTitle: "Where Style Meets ",
         heroIdentity: "Identity.",
@@ -250,7 +258,6 @@ const TRANSLATIONS = {
         saveStore: "تحديث واجهة المتجر",
         marketplace: "المتجر",
         trackOrder: "تتبع الطلب",
-        sellerPortal: "بوابة البائع",
         home: "الرئيسية",
         heroTitle: "حيث يلتقي الأسلوب بـ ",
         heroIdentity: "الهوية.",
@@ -466,7 +473,7 @@ function updateStaticTranslations() {
             if (lp) lp.placeholder = t.phone;
             if (lps) lps.placeholder = t.password;
             
-            const loginBtn = authCard.querySelector('#form-login button');
+            const loginBtn = authCard.querySelector('#form-login .btn-primary');
             if(loginBtn) loginBtn.innerText = t.login;
             
             const rn = document.getElementById('reg-name');
@@ -476,7 +483,7 @@ function updateStaticTranslations() {
             if (rp) rp.placeholder = t.phone;
             if (rps) rps.placeholder = t.password;
             
-            const regBtn = authCard.querySelector('#form-register button');
+            const regBtn = authCard.querySelector('#form-register .btn-primary');
             if(regBtn) regBtn.innerText = t.createAccount;
         }
         
@@ -523,11 +530,14 @@ function updateStaticTranslations() {
         if(homeHero) {
             const h1 = homeHero.querySelector('h1');
             const p = homeHero.querySelector('p');
-            const btns = homeHero.querySelectorAll('button');
+            const mpBtn = homeHero.querySelector('button[onclick="showView(\'marketplace\')"]');
+            const bkBtn = document.getElementById('home-basket-btn');
+            const slBtn = document.getElementById('home-seller-btn');
+            
             if (h1) h1.innerHTML = `${t.heroTitle} <span class="accent-text">${t.heroIdentity}</span>`;
             if (p) p.innerText = t.heroText;
-            if (btns.length >= 1) btns[0].innerText = t.enterMarketplace;
-            if (btns.length >= 2) btns[1].innerText = t.basket;
+            if (mpBtn) mpBtn.innerText = t.enterMarketplace;
+            if (bkBtn) bkBtn.innerText = t.basket;
         }
         
         const features = document.querySelectorAll('.feature-card');
@@ -610,7 +620,7 @@ function updateStaticTranslations() {
                 if (sni) sni.placeholder = currentLang === 'ar' ? 'أدخل اسم المتجر' : 'Enter Store Name';
                 const ut = settingsCard.querySelector('.upload-text');
                 if (ut) ut.innerText = t.storeHero;
-                const saveBtn = settingsCard.querySelector('button');
+                const saveBtn = settingsCard.querySelector('.btn-primary');
                 if (saveBtn) saveBtn.innerText = t.saveStore;
 
                 // Pre-fill current name from memory or SHOPS
@@ -670,17 +680,22 @@ function updateStaticTranslations() {
         if(footer) {
             const fp = footer.querySelector('.footer-brand p');
             const fhl = footer.querySelectorAll('.footer-links h4');
-            const flb = footer.querySelectorAll('.footer-links button');
+            const flButtons = footer.querySelectorAll('.footer-links button');
             const flh = footer.querySelector('.footer-legal h4');
             const flp = footer.querySelectorAll('.footer-legal p');
 
             if (fp) fp.innerText = t.footerText;
             if (fhl.length >= 1) fhl[0].innerText = t.platform;
-            if (flb.length >= 3) {
-                flb[0].innerText = t.home;
-                flb[1].innerText = t.marketplace;
-                flb[2].innerText = t.sellerPortal;
-            }
+            
+            // Map buttons to their translations based on their onclick handlers
+            flButtons.forEach(btn => {
+                const handler = btn.getAttribute('onclick');
+                if (handler === "showView('home')") btn.innerText = t.home;
+                else if (handler === "showView('marketplace')") btn.innerText = t.marketplace;
+                else if (handler === "showView('account')") btn.innerText = t.account;
+                else if (handler === "showView('basket')") btn.innerText = t.basket;
+            });
+
             if (flh) flh.innerText = t.support;
             if (flp.length >= 2) {
                 flp[0].innerText = t.contactUs;
@@ -764,7 +779,12 @@ function initMarketplace() {
     const list = document.getElementById('shops-list');
     if (!list) return;
 
-    list.innerHTML = SHOPS.map(shop => {
+    const filteredShops = SHOPS.filter(shop => {
+        const shopCat = shopSettingsOverrides[shop.id]?.category || shop.category;
+        return currentCategory === 'all' || shopCat === currentCategory;
+    });
+
+    list.innerHTML = filteredShops.map(shop => {
         const shopName = shopSettingsOverrides[shop.id]?.name || shop.name;
         return `
             <div class="shop-card" onclick="openShop('${shop.id}')">
@@ -791,6 +811,7 @@ function filterByCategory(cat) {
             btn.classList.add('active');
         }
     });
+    initMarketplace();
     renderProductFeed();
 }
 
@@ -1004,6 +1025,22 @@ function showToast(message) {
     }, 4000);
 }
 
+const EYE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
+
+function togglePass(id) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    
+    const btn = input.nextElementSibling;
+    if (btn && btn.tagName === 'BUTTON') {
+        btn.innerHTML = isPassword ? EYE_OFF_ICON : EYE_ICON;
+    }
+}
+
 // ACCOUNT & AUTH
 function toggleAuthMode(mode) {
     console.log("Toggling auth mode to:", mode);
@@ -1136,9 +1173,20 @@ async function handleLogin() {
                 loggedInUser = data;
                 localStorage.setItem('aneeq_user', JSON.stringify(data));
                 
-                const sellerShop = SHOPS.find(s => s.pass === pass);
-                if(sellerShop) {
-                    loggedInShopId = sellerShop.id;
+                // Also check if this user is a seller
+                if (data.shopId) {
+                    loggedInShopId = data.shopId;
+                } else {
+                    const sellerShop = SHOPS.find(s => s.pass === pass && s.phone === phone);
+                    if(sellerShop) {
+                        loggedInShopId = sellerShop.id;
+                        // Persist link to user doc for future logins
+                        updateDoc(doc(db, "users", phone), { shopId: loggedInShopId }).catch(console.error);
+                        loggedInUser.shopId = loggedInShopId;
+                    }
+                }
+                
+                if (loggedInShopId) {
                     localStorage.setItem('aneeq_seller_id', loggedInShopId);
                 }
                 
@@ -1151,13 +1199,24 @@ async function handleLogin() {
             console.log("User not found in Firestore users coll");
         }
         
-        const legacyShop = SHOPS.find(s => s.pass === pass);
+        const legacyShop = SHOPS.find(s => s.pass === pass && s.phone === phone);
         if(legacyShop) {
-             console.log("Login matched legacy shop pass");
-             loggedInUser = { name: legacyShop.name, phone: phone, location: "" };
+             console.log("Login matched legacy shop pass and phone");
              loggedInShopId = legacyShop.id;
+             loggedInUser = { name: legacyShop.name, phone: phone, location: "", shopId: loggedInShopId };
              localStorage.setItem('aneeq_user', JSON.stringify(loggedInUser));
              localStorage.setItem('aneeq_seller_id', loggedInShopId);
+             
+             // Create user doc so phone/pass persist
+             setDoc(doc(db, "users", phone), {
+                 name: legacyShop.name,
+                 phone: phone,
+                 password: pass,
+                 location: "",
+                 shopId: loggedInShopId,
+                 createdAt: serverTimestamp()
+             }).catch(console.error);
+
              loginSuccess();
              return;
         }
@@ -1198,7 +1257,10 @@ function loginSuccess() {
     updateProfileUI();
     
     if(loggedInShopId) {
-        document.getElementById('seller-tools').classList.remove('hidden');
+        const sellerTools = document.getElementById('seller-tools');
+        if (sellerTools) {
+            sellerTools.classList.remove('hidden');
+        }
         renderAdminInventory();
     }
     
@@ -1222,6 +1284,19 @@ function updateProfileUI() {
     `;
     if(loggedInUser.location) {
         document.getElementById('profile-location').value = loggedInUser.location;
+    }
+
+    if (loggedInShopId) {
+        const shop = SHOPS.find(s => s.id === loggedInShopId);
+        if (shop) {
+            const currentName = shopSettingsOverrides[loggedInShopId]?.name || shop.name;
+            const currentCat = shopSettingsOverrides[loggedInShopId]?.category || shop.category || "Men";
+            
+            document.getElementById('store-name-input').value = currentName;
+            document.getElementById('store-category-input').value = currentCat;
+            document.getElementById('store-phone-input').value = loggedInUser.phone;
+            document.getElementById('store-pass-input').value = loggedInUser.password;
+        }
     }
 }
 
@@ -1248,6 +1323,9 @@ function setupAdminSelect() {
 
 function handleSellerLogin() {
     showView('account');
+    if (loggedInUser && !loggedInShopId) {
+        showToast(currentLang === 'ar' ? 'أنت مسجل دخول كمستخدم. للوصول للبوابة، استخدم مفتاح المتجر.' : "Logged in as user. To access portal, use store key as password.");
+    }
 }
 
 function logout() {
@@ -1341,30 +1419,77 @@ async function previewStoreImage(input) {
 
 async function saveStoreSettings() {
     const newName = document.getElementById('store-name-input').value.trim();
-    if (!loggedInShopId) return;
+    const newCategory = document.getElementById('store-category-input').value;
+    const newPhone = normalizePhone(document.getElementById('store-phone-input').value.trim());
+    const newPass = document.getElementById('store-pass-input').value.trim();
+    
+    if (!loggedInShopId || !loggedInUser) return;
 
     const btn = document.querySelector('.admin-settings-card .btn-primary');
     const originalText = btn.innerText;
     btn.disabled = true;
     btn.innerText = currentLang === 'ar' ? 'جاري الحفظ...' : 'Saving...';
 
-    const updateData = {
-        shopId: loggedInShopId,
-        updatedAt: serverTimestamp()
-    };
-    if (newName) updateData.name = newName;
-    if (currentStoreBase64) updateData.hero = currentStoreBase64;
-
     try {
+        const updateData = {
+            shopId: loggedInShopId,
+            category: newCategory,
+            updatedAt: serverTimestamp()
+        };
+        if (newName) updateData.name = newName;
+        if (currentStoreBase64) updateData.hero = currentStoreBase64;
+        
+        // Update user profile in Firestore
+        const oldPhone = loggedInUser.phone;
+        const userUpdates = {
+            name: newName || loggedInUser.name,
+            password: newPass || loggedInUser.password,
+            shopId: loggedInShopId
+        };
+        
+        // If phone changed, it's a bit more complex since ID is the phone
+        if (newPhone !== oldPhone && newPhone.length >= 10) {
+             const newUserRef = doc(db, "users", newPhone);
+             const newUserDoc = await getDoc(newUserRef);
+             if (newUserDoc.exists()) {
+                 showToast(currentLang === 'ar' ? "رقم الهاتف الجديد مستخدم بالفعل" : "New phone number is already in use.");
+                 throw new Error("Phone occupied");
+             }
+             
+             // Transfer data to new phone doc
+             const fullNewUserData = { ...loggedInUser, ...userUpdates, phone: newPhone };
+             await setDoc(newUserRef, fullNewUserData);
+             await deleteDoc(doc(db, "users", oldPhone));
+             loggedInUser = fullNewUserData;
+        } else {
+             await updateDoc(doc(db, "users", oldPhone), userUpdates);
+             loggedInUser = { ...loggedInUser, ...userUpdates };
+        }
+        
+        localStorage.setItem('aneeq_user', JSON.stringify(loggedInUser));
+
         await setDoc(doc(db, "shop_settings", loggedInShopId), updateData, { merge: true });
+        
+        // Update in-memory SHOPS for current session
+        const shopIdx = SHOPS.findIndex(s => s.id === loggedInShopId);
+        if (shopIdx !== -1) {
+            SHOPS[shopIdx].name = newName || SHOPS[shopIdx].name;
+            SHOPS[shopIdx].category = newCategory;
+            SHOPS[shopIdx].phone = loggedInUser.phone;
+            SHOPS[shopIdx].pass = loggedInUser.password;
+        }
+
         showToast(currentLang === 'ar' ? 'تم تحديث الإعدادات!' : "Store settings updated!");
         if (currentStoreBase64) {
             currentStoreBase64 = null;
             document.getElementById('store-settings-preview').innerHTML = '';
         }
+        updateProfileUI();
     } catch (e) {
-        handleFirestoreError(e, OperationType.WRITE, 'shop_settings');
-        showToast("Error saving settings");
+        if (e.message !== "Phone occupied") {
+            handleFirestoreError(e, OperationType.WRITE, 'shop_settings');
+            showToast("Error saving settings");
+        }
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;
