@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>aneeq | Marketplace</title>
+    <title>aneeq | Specials</title>
     <link rel="stylesheet" href="src/index.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -69,9 +69,9 @@
                 </div>
             </div>
             <nav>
-                <button onclick="showView('marketplace')">Marketplace</button>
-                <button onclick="showView('basket')">Basket</button>
-                <button onclick="showView('account')" id="nav-account-btn">Account</button>
+                <button onclick="showView('marketplace')">العروض الخاصة</button>
+                <button onclick="showView('basket')">طلبات الشراء</button>
+                <button onclick="showView('account')" id="nav-account-btn">الحساب</button>
             </nav>
         </div>
     </header>
@@ -80,34 +80,34 @@
         <!-- 0. HOME VIEW -->
         <section id="view-home" class="view">
             <div class="home-hero">
-                <h1>Where Style Meets <span class="accent-text">Identity.</span></h1>
-                <p>Welcome to aneeq, the premium marketplace for independent creators and discerning collectors.</p>
+                <h1>حيث يلتقي الأسلوب بـ <span class="accent-text">الهوية.</span></h1>
+                <p>مرحباً بكم في أنيق، المتجر المميز للمبدعين المستقلين وجامعي القطع الفريدة.</p>
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-primary large" onclick="showView('marketplace')">Enter Marketplace</button>
-                    <button class="btn-outline large" onclick="showView('basket')" style="background: white; border-radius: 12px; font-weight: 600; padding: 18px 40px;" id="home-basket-btn">Basket</button>
+                    <button class="btn-primary large" onclick="showView('marketplace')">دخول المتجر</button>
+                    <button class="btn-outline large" onclick="showView('basket')" style="background: white; border-radius: 12px; font-weight: 600; padding: 18px 40px;" id="home-basket-btn">طلبات الشراء</button>
                 </div>
             </div>
             
             <div class="feature-grid">
                 <div class="feature-card">
-                    <h3>Curated Excellence</h3>
-                    <p>Every shop on our platform is hand-picked for quality and originality.</p>
+                    <h3>تميز منتقى</h3>
+                    <p>يتم اختيار كل متجر على منصتنا يدوياً لضمان الجودة والأصالة.</p>
                 </div>
                 <div class="feature-card">
-                    <h3>Secure Marketplace</h3>
-                    <p>Shop with confidence through our verified transaction system.</p>
+                    <h3>اتصال مباشر</h3>
+                    <p>اطلب القطع مباشرة من المبدعين من خلال بوابتنا الآمنة.</p>
                 </div>
                 <div class="feature-card">
-                    <h3>Global Vision</h3>
-                    <p>Wear pieces that aren't available anywhere else in the world.</p>
+                    <h3>رؤية عالمية</h3>
+                    <p>ارتدِ قطعاً لا تتوفر في أي مكان آخر في العالم.</p>
                 </div>
             </div>
 
             <div class="home-promo">
                 <div class="promo-text">
-                    <h2>Own items that tell a story.</h2>
-                    <p>Moving away from fast fashion towards intentional ownership. aneeq connects you to the makers behind the craft.</p>
-                    <button class="btn-outline" onclick="showView('marketplace')">Discover Brands</button>
+                    <h2>امتلك قطعاً تحكي قصة.</h2>
+                    <p>الابتعاد عن الموضة السريعة نحو الملكية المقصودة. أنيق يربطك بالمبدعين وراء الحرفة.</p>
+                    <button class="btn-outline" onclick="showView('marketplace')">اكتشف العلامات التجارية</button>
                 </div>
                 <div class="promo-img">
                     <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800" alt="Promo">
@@ -124,9 +124,9 @@
                 </button>
             </div>
             <div class="hero">
-                <div class="hero-tag">Curated Collections</div>
-                <h1>Independent Brands</h1>
-                <p>Discovery premium pieces from the world's most unique creators.</p>
+                <div class="hero-tag" id="mp-hero-tag">مجموعات مختارة</div>
+                <h1 id="mp-hero-title">العلامات التجارية المستقلة</h1>
+                <p id="mp-hero-desc">اكتشف قطعاً متميزة من أكثر المبدعين تفرداً في العالم.</p>
             </div>
 
             <div class="filter-bar">
@@ -141,8 +141,8 @@
             </div>
 
             <div class="feed-header">
-                <h2>Marketplace Feed</h2>
-                <div class="feed-meta">Showing all unique pieces</div>
+                <h2 id="mp-feed-title">Specials</h2>
+                <div class="feed-meta" id="mp-feed-meta">Showing all unique pieces</div>
             </div>
             <div class="products-grid" id="marketplace-feed">
                 <!-- Global products injected here -->
@@ -158,13 +158,13 @@
                 </button>
             </div>
             <div class="hero">
-                <h1 id="basket-title">My <span class="accent-text">Basket</span></h1>
+                <h1 id="basket-title">Purchase <span class="accent-text">Requests</span></h1>
                 <p id="basket-desc">View and track your current purchase requests.</p>
             </div>
             
             <div class="track-card cardi" id="basket-auth-prompt">
-                <p style="text-align: center; margin-bottom: 20px;">Please login to view your basket.</p>
-                <button onclick="showView('account')" class="btn-primary" style="width: 100%;">Go to Account</button>
+                <p style="text-align: center; margin-bottom: 20px;" id="basket-auth-text">Please login to view your requests.</p>
+                <button onclick="showView('account')" class="btn-primary" style="width: 100%;" id="basket-auth-btn">Go to Account</button>
             </div>
 
             <div id="basket-results" class="hidden" style="margin-top: 40px; text-align: left;">
@@ -190,55 +190,63 @@
         <!-- 3. ACCOUNT VIEW (LOGIN/REGISTER/PROFILE) -->
         <section id="view-account" class="view hidden">
             <div id="account-auth" class="auth-card">
-                <div class="auth-tabs" style="display: flex; gap: 20px; justify-content: center; margin-bottom: 30px;">
-                    <button id="tab-login" onclick="toggleAuthMode('login')" style="font-weight: 700; border-bottom: 2px solid #000; padding: 5px 10px;">Login</button>
-                    <button id="tab-register" onclick="toggleAuthMode('register')" style="font-weight: 400; color: #999; padding: 5px 10px;">Register</button>
-                </div>
-
-                <!-- Login Form -->
-                <div id="form-login">
-                    <h2 style="margin-bottom: 25px; font-weight: 800; text-align: center;">Welcome Back</h2>
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div class="field-group">
-                            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Phone Number</label>
-                            <input type="tel" id="login-phone" placeholder="+964..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
-                        </div>
-                        <div class="field-group">
-                            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Password</label>
-                            <div style="position: relative;">
-                                <input type="password" id="login-pass" placeholder="••••••••" style="width: 100%; padding: 12px; padding-right: 45px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
-                                <button type="button" onclick="togglePass('login-pass')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 0;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <button onclick="handleLogin()" class="btn-primary" style="width: 100%; padding: 14px; margin-top: 10px; border-radius: 8px; font-weight: 600;">Login to Account</button>
+                <div class="auth-hero">
+                    <div class="auth-hero-content">
+                        <h3>Editorial Style</h3>
+                        <p>Curated for the intentional collector.</p>
                     </div>
-                    <p style="font-size: 11px; color: #999; margin-top: 25px; text-align: center;">Sellers: Use your store phone and password to login.</p>
                 </div>
+                <div class="auth-form-container">
+                    <div class="auth-tabs" style="display: flex; gap: 20px; justify-content: center; margin-bottom: 30px;">
+                        <button id="tab-login" onclick="toggleAuthMode('login')" style="font-weight: 700; border-bottom: 2px solid #000; padding: 5px 10px;">Login</button>
+                        <button id="tab-register" onclick="toggleAuthMode('register')" style="font-weight: 400; color: #999; padding: 5px 10px;">Register</button>
+                    </div>
 
-                <!-- Register Form -->
-                <div id="form-register" class="hidden">
-                    <h2 style="margin-bottom: 25px; font-weight: 800; text-align: center;">Join aneeq</h2>
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div class="field-group">
-                            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Full Name</label>
-                            <input type="text" id="reg-name" placeholder="Enter your name" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
-                        </div>
-                        <div class="field-group">
-                            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Phone Number</label>
-                            <input type="tel" id="reg-phone" placeholder="+964..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
-                        </div>
-                        <div class="field-group">
-                            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Create Password</label>
-                            <div style="position: relative;">
-                                <input type="password" id="reg-pass" placeholder="••••••••" style="width: 100%; padding: 12px; padding-right: 45px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
-                                <button type="button" onclick="togglePass('reg-pass')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 0;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
+                    <!-- Login Form -->
+                    <div id="form-login">
+                        <h2 style="margin-bottom: 25px; font-weight: 800; text-align: center;">Welcome Back</h2>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="field-group">
+                                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Phone Number</label>
+                                <input type="tel" id="login-phone" placeholder="+964..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
                             </div>
+                            <div class="field-group">
+                                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Password</label>
+                                <div style="position: relative;">
+                                    <input type="password" id="login-pass" placeholder="••••••••" style="width: 100%; padding: 12px; padding-right: 45px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
+                                    <button type="button" onclick="togglePass('login-pass')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 0;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button onclick="handleLogin()" class="btn-primary" style="width: 100%; padding: 14px; margin-top: 10px; border-radius: 8px; font-weight: 600;">Login to Account</button>
                         </div>
-                        <button onclick="handleRegister()" class="btn-primary" style="width: 100%; padding: 14px; margin-top: 10px; border-radius: 8px; font-weight: 600;">Create Account</button>
+                        <p style="font-size: 11px; color: #999; margin-top: 25px; text-align: center;">Sellers: Use your store phone and password to login.</p>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div id="form-register" class="hidden">
+                        <h2 style="margin-bottom: 25px; font-weight: 800; text-align: center;">Join aneeq</h2>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="field-group">
+                                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Full Name</label>
+                                <input type="text" id="reg-name" placeholder="Enter your name" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
+                            </div>
+                            <div class="field-group">
+                                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Phone Number</label>
+                                <input type="tel" id="reg-phone" placeholder="+964..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
+                            </div>
+                            <div class="field-group">
+                                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Create Password</label>
+                                <div style="position: relative;">
+                                    <input type="password" id="reg-pass" placeholder="••••••••" style="width: 100%; padding: 12px; padding-right: 45px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
+                                    <button type="button" onclick="togglePass('reg-pass')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 0;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button onclick="handleRegister()" class="btn-primary" style="width: 100%; padding: 14px; margin-top: 10px; border-radius: 8px; font-weight: 600;">Create Account</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -274,14 +282,6 @@
                                     <label style="font-size: 12px; font-weight: 700; text-transform: uppercase;">Store Display Name</label>
                                     <input type="text" id="store-name-input" placeholder="Enter Store Name" style="margin-top: 5px;">
                                 </div>
-                                <div class="field-group" style="margin-bottom: 15px;">
-                                    <label style="font-size: 12px; font-weight: 700; text-transform: uppercase;">Primary Category</label>
-                                    <select id="store-category-input" style="margin-top: 5px; width: 100%; border: 1px solid #eee; padding: 12px; border-radius: 8px;">
-                                        <option value="Men">Men</option>
-                                        <option value="Women">Women</option>
-                                        <option value="Kids">Kids</option>
-                                    </select>
-                                </div>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                                     <div class="field-group">
                                         <label style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Seller Phone</label>
@@ -297,13 +297,28 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="file-upload-group">
-                                    <label class="file-label" style="height: 100px; padding: 10px;">
-                                        <span class="upload-icon">+</span>
-                                        <span class="upload-text" id="store-image-label">Store Hero Image</span>
-                                        <input type="file" accept="image/*" onchange="previewStoreImage(this)">
-                                    </label>
-                                    <div id="store-settings-preview" class="settings-preview"></div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                    <div class="file-adjust-card">
+                                        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block;">Store Logo</label>
+                                        <div class="file-upload-group">
+                                            <label class="file-label" style="height: 120px; padding: 10px; border-radius: 50%; width: 120px; margin: 0 auto;">
+                                                <span class="upload-icon">+</span>
+                                                <input type="file" accept="image/*" onchange="previewStoreImage(this, 'logo')">
+                                            </label>
+                                            <div id="logo-preview-container" class="settings-preview circle-preview"></div>
+                                        </div>
+                                    </div>
+                                    <div class="file-adjust-card">
+                                        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block;">Hero Banner</label>
+                                        <div class="file-upload-group">
+                                            <label class="file-label" style="height: 120px; padding: 10px;">
+                                                <span class="upload-icon">+</span>
+                                                <span class="upload-text" id="store-image-label">Upload Hero</span>
+                                                <input type="file" accept="image/*" onchange="previewStoreImage(this, 'hero')">
+                                            </label>
+                                            <div id="hero-preview-container" class="settings-preview"></div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <button class="btn-primary" onclick="saveStoreSettings()" style="margin-top:10px; font-size: 13px;">Save Store Front</button>
                             </div>
@@ -317,7 +332,7 @@
                                     <option value="Women">Women</option>
                                     <option value="Kids">Kids</option>
                                 </select>
-                                <input type="number" id="p-price" placeholder="Price ($)">
+                                <input type="number" id="p-price" placeholder="السعر (د.ع)">
                                 <div class="file-upload-group">
                                     <label for="p-img" class="file-label">
                                         <span class="upload-icon">+</span>
@@ -341,21 +356,28 @@
         <!-- 4. MASTER ADMIN VIEW -->
         <section id="view-master" class="view hidden">
             <div id="master-login" class="auth-card danger">
-                <h2>aneeq Master</h2>
-                <p>Authorized access only.</p>
-                <input type="password" id="master-pass" placeholder="Master Key">
-                <button onclick="handleMasterLogin()">Verify Identity</button>
+                <h2>أنيق ماستر</h2>
+                <p>وصول مصرح به فقط.</p>
+                <input type="password" id="master-pass" placeholder="مفتاح الماستر">
+                <button onclick="handleMasterLogin()">التحقق من الهوية</button>
             </div>
             <div id="master-dashboard" class="hidden">
-                <div class="master-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="master-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                     <div>
-                        <h2>Marketplace Command Center</h2>
+                        <h2>مركز قيادة المتجر</h2>
                         <div id="master-stats"></div>
+                        <div class="master-tabs" style="display: flex; gap: 20px; margin-top: 20px;">
+                            <button id="master-tab-orders" onclick="switchMasterTab('orders')" style="font-weight: 700; border-bottom: 2px solid #fff; color: #fff; background: none; border-top: none; border-left: none; border-right: none; padding: 10px 0; cursor: pointer;">الطلبات الواردة</button>
+                            <button id="master-tab-shops" onclick="switchMasterTab('shops')" style="font-weight: 400; color: #999; background: none; border: none; padding: 10px 0; cursor: pointer;">إدارة المتاجر</button>
+                        </div>
                     </div>
-                    <button class="btn-outline" onclick="masterLogout()" style="color: white; border-color: #333;">Logout</button>
+                    <button class="btn-outline logout-btn" onclick="masterLogout()" style="color: white; border-color: #333;">Logout</button>
                 </div>
-                <div id="master-orders-list" class="orders-stack">
-                    <!-- Orders injected here -->
+                <div id="master-orders-view" class="orders-stack">
+                    <div id="master-orders-list"></div>
+                </div>
+                <div id="master-shops-view" class="hidden">
+                    <div id="master-shops-list" class="orders-stack"></div>
                 </div>
             </div>
         </section>
@@ -370,7 +392,7 @@
             <div class="footer-links" id="footer-links-container">
                 <h4>Platform</h4>
                 <button onclick="showView('home')">Home</button>
-                <button onclick="showView('marketplace')">Marketplace</button>
+                <button onclick="showView('marketplace')">Specials</button>
                 <button onclick="showView('account')">Account</button>
                 <button onclick="showView('basket')">Basket</button>
             </div>
@@ -381,7 +403,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            &copy; 2026 aneeq Marketplace. All rights reserved.
+            &copy; 2026 aneeq Specials. All rights reserved.
         </div>
     </footer>
 
