@@ -137,6 +137,9 @@ body {
     font-weight: 700;
     cursor: pointer;
     letter-spacing: -1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 nav button {
