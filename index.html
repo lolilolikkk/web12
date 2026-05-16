@@ -30,13 +30,13 @@
         .hidden { display: none !important; }
         #app-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; display: flex; flex-direction: column;
+            background: #FAF8F6; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 9999;
             transition: opacity 0.5s;
         }
         .loader-spin {
-            width: 40px; height: 40px; border: 3px solid #eee;
-            border-top: 3px solid #000; border-radius: 50%;
+            width: 40px; height: 40px; border: 3px solid #E8E2DE;
+            border-top: 3px solid #B38B6D; border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -64,7 +64,7 @@
         <div class="max-content flex-nav">
             <div style="display: flex; align-items: center; gap: 20px;">
                 <div class="logo" onclick="showView('home')">
-                    <img src="/favicon.png" alt="aneeq" style="height: 32px; width: 32px; object-fit: contain; background: white; border-radius: 6px; padding: 2px;">
+                    <img src="/favicon.png" alt="aneeq" style="height: 32px; width: 32px; object-fit: contain; background: transparent; border-radius: 6px; padding: 2px;">
                     aneeq
                 </div>
                 <div class="lang-switch">
@@ -89,7 +89,7 @@
                 <p>مرحباً بكم في أنيق، المتجر المميز للمبدعين المستقلين وجامعي القطع الفريدة.</p>
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                     <button class="btn-primary large" onclick="showView('marketplace')">دخول المتجر</button>
-                    <button class="btn-outline large" onclick="showView('basket')" style="background: white; border-radius: 12px; font-weight: 600; padding: 18px 40px;" id="home-basket-btn">طلبات الشراء</button>
+                    <button class="btn-outline large" onclick="showView('basket')" style="background: transparent; border-radius: 12px; font-weight: 600; padding: 18px 40px;" id="home-basket-btn">طلبات الشراء</button>
                 </div>
             </div>
             

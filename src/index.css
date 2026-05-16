@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
 
 :root {
-    --bg: #f9f9f9;
+    --bg: #FAF8F6;
     --card: #ffffff;
-    --accent: #3b82f6;
-    --text: #111111;
-    --muted: #666666;
-    --border: #eeeeee;
+    --accent: #B38B6D;
+    --text: #2D241E;
+    --muted: #8C7E74;
+    --border: #E8E2DE;
 }
 
 [lang="ar"] {
@@ -155,8 +155,8 @@ nav button {
 nav button:hover { color: var(--accent); }
 
 .master-trigger {
-    background: #000;
-    color: white !important;
+    background: var(--text);
+    color: #FAF8F6 !important;
     padding: 8px 16px;
     border-radius: 20px;
 }
@@ -259,6 +259,7 @@ nav button:hover { color: var(--accent); }
     border-radius: 40px;
     margin-bottom: 40px;
     border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(179, 139, 109, 0.05);
 }
 
 .hero-tag {
@@ -325,11 +326,11 @@ nav button:hover { color: var(--accent); }
 }
 
 .filter-btn.active {
-    background: #000;
+    background: var(--accent);
     color: #fff;
-    border-color: #000;
+    border-color: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 20px rgba(179, 139, 109, 0.2);
 }
 
 /* Shop Settings UI */
@@ -379,14 +380,14 @@ nav button:hover { color: var(--accent); }
 }
 
 #view-marketplace .hero {
-    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #FAF8F6 100%);
     position: relative;
     overflow: hidden;
     padding: 80px 0;
 }
 
 #view-marketplace .hero-tag {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(179, 139, 109, 0.1);
     display: inline-block;
     padding: 4px 12px;
     border-radius: 20px;
@@ -557,7 +558,7 @@ nav button:hover { color: var(--accent); }
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--accent);
-    background: rgba(59, 130, 246, 0.05);
+    background: rgba(179, 139, 109, 0.05);
     padding: 4px 8px;
     border-radius: 4px;
     transition: all 0.2s;
@@ -597,8 +598,8 @@ nav button:hover { color: var(--accent); }
 .btn-buy-icon {
     width: 40px;
     height: 40px;
-    background: #000;
-    color: #fff;
+    background: var(--text);
+    color: #FAF8F6;
     border: none;
     border-radius: 12px;
     display: flex;
@@ -619,14 +620,19 @@ nav button:hover { color: var(--accent); }
 
 /* Buttons */
 .btn-primary {
-    background: black;
-    color: white;
+    background: var(--text);
+    color: #FAF8F6;
     border: none;
     padding: 12px 24px;
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
+    transition: background 0.3s;
+}
+
+.btn-primary:hover {
+    background: var(--accent);
 }
 
 .btn-outline {
@@ -733,8 +739,8 @@ input, select {
 
 /* Master */
 .master-header {
-    background: black;
-    color: white;
+    background: var(--text);
+    color: #FAF8F6;
     padding: 40px;
     border-radius: 24px;
     margin-top: 40px;
@@ -836,12 +842,13 @@ footer { text-align: center; padding: 40px; color: var(--muted); }
     position: fixed;
     top: 20px; left: 50%;
     transform: translateX(-50%);
-    background: black;
-    color: white;
+    background: var(--text);
+    color: #FAF8F6;
     padding: 15px 30px;
     border-radius: 50px;
     font-weight: 700;
     z-index: 2000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
 /* Mobile Optimization */
@@ -933,7 +940,7 @@ footer { text-align: center; padding: 40px; color: var(--muted); }
     justify-content: center;
     padding: 30px 20px;
     background: #fdfdfd;
-    border: 2px dashed #000;
+    border: 2px dashed var(--accent);
     border-radius: 20px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -947,7 +954,7 @@ footer { text-align: center; padding: 40px; color: var(--muted); }
 .upload-icon {
     font-size: 28px;
     margin-bottom: 8px;
-    color: #000;
+    color: var(--text);
     font-weight: 300;
 }
 
