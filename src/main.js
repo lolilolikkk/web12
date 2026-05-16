@@ -430,13 +430,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderMasterOrders();
         }
         
-        // Check URL hash on load
-        const hash = window.location.hash.substring(1);
+        // Check URL path on load
+        const path = window.location.pathname.substring(1);
         const validViews = ['home', 'marketplace', 'basket', 'account', 'master'];
-        if (hash && validViews.includes(hash)) {
-            showView(hash);
+        if (path && validViews.includes(path)) {
+            showView(path, true);
         } else {
-            showView('home');
+            showView('home', true);
         }
         
         if (typeof setupAdminSelect === 'function') {
@@ -763,18 +763,21 @@ function updateStaticTranslations() {
 }
 
 
-// Listen for hash changes
-window.addEventListener('hashchange', () => {
-    const hash = window.location.hash.substring(1);
-    if (hash && ['home', 'marketplace', 'basket', 'account', 'master'].includes(hash)) {
-        showView(hash);
-    }
+// Listen for back/forward navigation
+window.addEventListener('popstate', (event) => {
+    const viewId = event.state?.viewId || 'home';
+    showView(viewId, true);
 });
 
 // ROUTING
-function showView(viewId) {
+function showView(viewId, skipState = false) {
     currentView = viewId;
-    window.location.hash = viewId;
+    
+    if (!skipState) {
+        const url = viewId === 'home' ? '/' : '/' + viewId;
+        history.pushState({ viewId }, '', url);
+    }
+    
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     const target = document.getElementById(`view-${viewId}`);
     if(target) target.classList.remove('hidden');
