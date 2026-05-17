@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>aneeq | Special Items</title>
+    <title>aneeq | Unique Items</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
     <link rel="stylesheet" href="src/index.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -74,7 +76,7 @@
                 </div>
             </div>
             <nav>
-                <button onclick="showView('marketplace')">قطع مميزة</button>
+                <button onclick="showView('marketplace')">كل المتاجر</button>
                 <button onclick="showView('basket')">طلبات الشراء</button>
                 <button onclick="showView('account')" id="nav-account-btn">الحساب</button>
             </nav>
@@ -88,7 +90,7 @@
                 <h1>حيث يلتقي الأسلوب بـ <span class="accent-text">الهوية.</span></h1>
                 <p>مرحباً بكم في أنيق، المتجر المميز للمبدعين المستقلين وجامعي القطع الفريدة.</p>
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-primary large" onclick="showView('marketplace')">دخول المتجر</button>
+                    <button class="btn-primary large" onclick="showView('marketplace')">عرض كل المتاجر</button>
                     <button class="btn-outline large" onclick="showView('basket')" style="background: transparent; border-radius: 12px; font-weight: 600; padding: 18px 40px;" id="home-basket-btn">طلبات الشراء</button>
                 </div>
             </div>
@@ -146,7 +148,7 @@
             </div>
 
             <div class="feed-header">
-                <h2 id="mp-feed-title">Special Items</h2>
+                <h2 id="mp-feed-title">Unique Items</h2>
                 <div class="feed-meta" id="mp-feed-meta">Showing all unique pieces</div>
             </div>
             <div class="products-grid" id="marketplace-feed">
@@ -311,6 +313,7 @@
                                                 <input type="file" accept="image/*" onchange="previewStoreImage(this, 'logo')">
                                             </label>
                                             <div id="logo-preview-container" class="settings-preview circle-preview"></div>
+                                            <button id="remove-logo-btn" class="hidden" onclick="removeStoreImage('logo')" style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; border: none; border-radius: 12px; padding: 4px 10px; font-size: 10px; cursor: pointer; z-index: 10; font-family: Inter, sans-serif;">Remove</button>
                                         </div>
                                     </div>
                                     <div class="file-adjust-card">
@@ -322,6 +325,7 @@
                                                 <input type="file" accept="image/*" onchange="previewStoreImage(this, 'hero')">
                                             </label>
                                             <div id="hero-preview-container" class="settings-preview"></div>
+                                            <button id="remove-hero-btn" class="hidden" onclick="removeStoreImage('hero')" style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #ff4444; color: white; border: none; border-radius: 12px; padding: 4px 10px; font-size: 10px; cursor: pointer; z-index: 10; font-family: Inter, sans-serif;">Remove</button>
                                         </div>
                                     </div>
                                 </div>
@@ -338,13 +342,25 @@
                                     <option value="Kids">Kids</option>
                                 </select>
                                 <input type="number" id="p-price" placeholder="السعر (د.ع)">
-                                <div class="file-upload-group">
+                                <div class="field-group" style="margin-top: 10px;">
+                                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Description</label>
+                                    <textarea id="p-desc" placeholder="Describe your product... Material, fit, unique details." style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px; min-height: 80px;"></textarea>
+                                </div>
+                                <div class="field-group" style="margin-top: 10px;">
+                                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Tags</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="p-tag-input" placeholder="e.g. vintage" style="flex: 1; border: 1.5px solid #eee; padding: 10px; border-radius: 8px; font-size: 14px;">
+                                        <button onclick="addTagToProduct('new')" class="btn-primary" style="padding: 0 15px; font-size: 12px; height: 40px; margin-top: 0;">Add Tag</button>
+                                    </div>
+                                    <div id="p-tags-container" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;"></div>
+                                </div>
+                                <div class="file-upload-group" style="margin-top: 15px;">
                                     <label for="p-img" class="file-label">
                                         <span class="upload-icon">+</span>
-                                        <span class="upload-text" id="product-image-label">Upload Product Image</span>
+                                        <span class="upload-text" id="product-image-label">Photos (Up to 5)</span>
                                     </label>
-                                    <input type="file" id="p-img" accept="image/*" onchange="previewProductImage(this)">
-                                    <div id="product-preview" class="image-preview"></div>
+                                    <input type="file" id="p-img" accept="image/*" multiple onchange="previewProductImage(this)">
+                                    <div id="product-preview" class="image-preview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
                                 </div>
                                 <button onclick="addNewProduct()" class="btn-primary" style="margin-top: 10px;">Publish Product</button>
                             </div>
@@ -397,7 +413,7 @@
             <div class="footer-links" id="footer-links-container">
                 <h4>Platform</h4>
                 <button onclick="showView('home')">Home</button>
-                <button onclick="showView('marketplace')">Special Items</button>
+                <button onclick="showView('marketplace')">Unique Items</button>
                 <button onclick="showView('account')">Account</button>
                 <button onclick="showView('basket')">Basket</button>
             </div>
@@ -424,8 +440,73 @@
         </div>
     </div>
 
-    <!-- Notification -->
+    <!-- IMAGE ZOOM MODAL -->
+    <div id="zoom-modal" class="modal hidden" onclick="closeZoomModal()" style="z-index: 3000; background: rgba(0,0,0,0.95); cursor: zoom-out;">
+        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <img id="zoom-image" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 4px;">
+        </div>
+    </div>
+
+    <!-- NOTIFICATION -->
     <div id="toast" class="toast hidden">Request Sent to Master!</div>
+    
+    <!-- PRODUCT EDIT MODAL -->
+    <div id="product-edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeProductEditModal()">&times;</span>
+            <h2 id="edit-product-title" style="margin-bottom: 20px; font-family: var(--font-serif); font-weight: 700;">Edit Product</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="field-group">
+                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Product Name</label>
+                    <input type="text" id="edit-p-name" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="field-group">
+                        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Category</label>
+                        <select id="edit-p-cat" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px; background: white;">
+                            <option value="Men">Men</option>
+                            <option value="Women">Women</option>
+                            <option value="Kids">Kids</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Price (IQD)</label>
+                        <input type="number" id="edit-p-price" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px;">
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Description</label>
+                    <textarea id="edit-p-desc" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #eee; font-size: 14px; min-height: 100px;"></textarea>
+                </div>
+                <div class="field-group">
+                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block;">Tags</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="edit-p-tag-input" placeholder="e.g. vintage" style="flex: 1; border: 1.5px solid #eee; padding: 10px; border-radius: 8px; font-size: 14px;">
+                        <button onclick="addTagToProduct('edit')" class="btn-primary" style="padding: 0 15px; font-size: 12px; height: 40px; margin-top: 0;">Add Tag</button>
+                    </div>
+                    <div id="edit-p-tags-container" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;"></div>
+                </div>
+                <input type="hidden" id="edit-p-id">
+                <button onclick="saveProductEdit()" class="btn-primary" style="width: 100%; padding: 14px; margin-top: 10px;">Update Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CROPPER MODAL -->
+    <div id="crop-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeCropModal()">&times;</span>
+            <h3>Adjust Photo</h3>
+            <div style="max-height: 400px; margin-bottom: 20px; overflow: hidden;">
+                <img id="cropper-image" src="" style="max-width: 100%;">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="applyCrop()" class="btn-primary" style="flex: 1;">Apply Crop</button>
+                <button onclick="closeCropModal()" class="btn-outline" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="src/main.js"></script>
     <script>

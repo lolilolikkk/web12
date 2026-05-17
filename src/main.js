@@ -40,10 +40,23 @@ window.setLanguage = (...args) => setLanguage(...args);
 window.filterByCategory = (...args) => filterByCategory(...args);
 window.previewProductImage = (...args) => previewProductImage(...args);
 window.previewStoreImage = (...args) => previewStoreImage(...args);
+window.removeStoreImage = (...args) => removeStoreImage(...args);
 window.saveStoreSettings = (...args) => saveStoreSettings(...args);
 window.togglePass = (...args) => togglePass(...args);
 window.switchMasterTab = (...args) => switchMasterTab(...args);
 window.updateShopCategory = (...args) => updateShopCategory(...args);
+window.applyCrop = (...args) => applyCrop(...args);
+window.closeCropModal = (...args) => closeCropModal(...args);
+window.editProduct = (...args) => editProduct(...args);
+window.saveProductEdit = (...args) => saveProductEdit(...args);
+window.closeProductEditModal = (...args) => closeProductEditModal(...args);
+window.addTagToProduct = (...args) => addTagToProduct(...args);
+window.removeTagFromProduct = (...args) => removeTagFromProduct(...args);
+
+window.closeZoomModal = (...args) => closeZoomModal(...args);
+window.zoomImage = (...args) => zoomImage(...args);
+window.removeProductPreviewImage = (...args) => removeProductPreviewImage(...args);
+window.setMainImage = (...args) => setMainImage(...args);
 
 const firebaseConfig = {
   "projectId": "gen-lang-client-0293781004",
@@ -159,13 +172,13 @@ const TRANSLATIONS = {
         storeSettings: "Store Settings",
         storeHero: "Store Header Image",
         saveStore: "Update Store Front",
-        marketplace: "Special Items",
+        marketplace: "All Shops",
         trackOrder: "Track Request",
         home: "Home",
         heroTitle: "Where Style Meets ",
         heroIdentity: "Identity.",
         heroText: "Welcome to aneeq, the premium marketplace for independent creators and discerning collectors.",
-        enterMarketplace: "Go to Stores",
+        enterMarketplace: "Go to All Shops",
         basket: "My Requests",
         account: "Account",
         login: "Login",
@@ -191,7 +204,7 @@ const TRANSLATIONS = {
         discoverBrands: "Discover Brands",
         independentBrands: "Independent Brands",
         curatedCollections: "Curated collections from unique creators, delivered directly to you.",
-        marketplaceFeed: "Special Items",
+        marketplaceFeed: "All Shops",
         browseProducts: "Browse products from all independent sellers in one place.",
         trackTitle: "Track Request",
         trackText: "Enter your number to see messages from Master.",
@@ -222,7 +235,7 @@ const TRANSLATIONS = {
         noProducts: "No products yet.",
         noItemsMarket: "No items in the marketplace yet.",
         buyNow: "Order Now",
-        backToMarket: "Back to Stores",
+        backToMarket: "Back to Unique Items",
         backToHome: "Back to Home",
         phonePlaceholder: "07XX XXX XXXX",
         noOrdersFound: "No requests found for this number.",
@@ -251,7 +264,7 @@ const TRANSLATIONS = {
         phLabel: "PH:",
         visitShop: "Visit Shop",
         backToHome: "Back to Home",
-        backToMarketplace: "Back to Stores",
+        backToMarketplace: "All Shops",
         loginToView: "Please login to view your requests.",
         goToAccount: "Go to Account",
         basketDesc: "View and track your current purchase requests.",
@@ -261,18 +274,22 @@ const TRANSLATIONS = {
         rights: "All rights reserved.",
         pending: "Pending",
         locationDetails: "Location/Details:",
+        edit: "Edit",
+        updateProduct: "Update Product",
+        description: "Description",
+        tags: "Tags (Comma separated)",
     },
     ar: {
         storeSettings: "إعدادات المتجر",
         storeHero: "صورة غلاف المتجر",
         saveStore: "تحديث واجهة المتجر",
-        marketplace: "قطع مميزة",
+        marketplace: "كل المتاجر",
         trackOrder: "تتبع الطلبات",
         home: "الرئيسية",
         heroTitle: "حيث يلتقي الأسلوب بـ ",
         heroIdentity: "الهوية.",
         heroText: "مرحباً بكم في أنيق، المتجر المميز للمبدعين المستقلين وجامعي القطع الفريدة.",
-        enterMarketplace: "دخول المتاجر",
+        enterMarketplace: "عرض كل المتاجر",
         basket: "طلبات الشراء",
         account: "الحساب",
         login: "تسجيل الدخول",
@@ -298,7 +315,7 @@ const TRANSLATIONS = {
         discoverBrands: "اكتشف العلامات التجارية",
         independentBrands: "العلامات التجارية المستقلة",
         curatedCollections: "مجموعات مختارة من مبدعين فريدين، تصل إليك مباشرة.",
-        marketplaceFeed: "قطع مميزة",
+        marketplaceFeed: "كل المتاجر",
         browseProducts: "تصفح المنتجات من جميع البائعين المستقلين في مكان واحد.",
         trackTitle: "تتبع الطلب",
         trackText: "أدخل رقمك لرؤية رسائل الماستر.",
@@ -329,7 +346,7 @@ const TRANSLATIONS = {
         noProducts: "لا توجد منتجات بعد.",
         noItemsMarket: "لا توجد عناصر في المتجر بعد.",
         buyNow: "اطلب الآن",
-        backToMarket: "العودة للمتاجر",
+        backToMarket: "العودة للقطع الفريدة",
         backToHome: "العودة للرئيسية",
         phonePlaceholder: "07XX XXX XXXX",
         noOrdersFound: "لم يتم العثور على طلبات لهذا الرقم.",
@@ -358,7 +375,7 @@ const TRANSLATIONS = {
         phLabel: "هاتف:",
         visitShop: "عرض المتجر",
         backToHome: "العودة للرئيسية",
-        backToMarketplace: "العودة للمتاجر",
+        backToMarketplace: "العودة لكل المتاجر",
         loginToView: "يرجى تسجيل الدخول لعرض طلبات الشراء الخاصة بك.",
         goToAccount: "الانتقال للحساب",
         basketDesc: "عرض وتتبع طلبات الشراء الحالية الخاصة بك.",
@@ -368,6 +385,10 @@ const TRANSLATIONS = {
         rights: "جميع الحقوق محفوظة.",
         pending: "قيد الانتظار",
         locationDetails: "الموقع/التفاصيل:",
+        edit: "تعديل",
+        updateProduct: "تحديث المنتج",
+        description: "الوصف",
+        tags: "الوسوم (مفصولة بفاصلة)",
     }
 
 };
@@ -392,6 +413,7 @@ let currentProductToBuy = null;
 let currentLang = localStorage.getItem('aneeq_lang') || 'ar';
 let currentCategory = 'all';
 const shopSettingsOverrides = {};
+const PRODUCT_CACHE = {};
 
 // INIT
 document.addEventListener('DOMContentLoaded', async () => {
@@ -727,6 +749,23 @@ function updateStaticTranslations() {
         // Toast
         const toast = document.getElementById('toast');
         if (toast) toast.innerText = t.toastSent;
+
+        // Edit Modal
+        const editModal = document.getElementById('product-edit-modal');
+        if (editModal) {
+            const title = document.getElementById('edit-product-title');
+            if (title) title.innerText = t.updateProduct;
+            const labels = editModal.querySelectorAll('label');
+            if (labels.length >= 4) {
+                labels[0].innerText = t.productName;
+                labels[1].innerText = t.category;
+                labels[2].innerText = t.price;
+                labels[3].innerText = t.description;
+                labels[4].innerText = t.tags;
+            }
+            const updateBtn = editModal.querySelector('.btn-primary');
+            if (updateBtn) updateBtn.innerText = t.updateProduct;
+        }
         
         // Footer
         const footer = document.querySelector('footer');
@@ -892,6 +931,7 @@ function renderProductFeed() {
         let allProducts = [];
         snapshot.forEach(doc => {
             const p = { ...doc.data(), id: doc.id };
+            PRODUCT_CACHE[p.id] = p;
             if(currentCategory === 'all' || p.category === currentCategory) {
                 const shop = SHOPS.find(s => s.id === p.shopId);
                 if(shop) {
@@ -915,7 +955,7 @@ function renderProductFeed() {
         }
 
         feedContainer.innerHTML = allProducts.map(p => `
-            <div class="product-card" onclick="buyFromFeed('${p.shopId}', '${p.id}', '${p.name}', ${p.price}, '${p.image}')">
+            <div class="product-card" onclick="openBuyModal('${p.id}')">
                 <div class="product-info-top">
                     <div class="product-meta">
                         <span class="product-shop-tag" onclick="event.stopPropagation(); openShop('${p.shopId}')">
@@ -928,6 +968,12 @@ function renderProductFeed() {
                     <img src="${p.image}" alt="${p.name}">
                 </div>
                 <div class="product-info-bottom">
+                    <div style="padding: 10px 15px; border-top: 1px solid #f9f9f9;">
+                         ${p.description ? `<p style="font-size: 11px; color: #666; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px;">${p.description}</p>` : ''}
+                         <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            ${(p.tags || []).map(tag => `<span class="product-tag">${tag}</span>`).join('')}
+                         </div>
+                    </div>
                     <div class="product-card-footer">
                         <div class="product-price">${p.price} د.ع</div>
                         <button class="btn-buy-icon">
@@ -942,10 +988,8 @@ function renderProductFeed() {
     });
 }
 
-function buyFromFeed(shopId, pId, name, price, image) {
-    const shop = SHOPS.find(s => s.id === shopId);
-    activeShop = shop;
-    openBuyModal(pId, name, price, image, shopId);
+function buyFromFeed(shopId, pId) {
+    openBuyModal(pId);
 }
 
 // SHOP DETAIL
@@ -989,7 +1033,11 @@ function renderProducts(shopId) {
     const q = query(collection(db, "inventory"), where("shopId", "==", shopId));
     shopProductsUnsubscribe = onSnapshot(q, (snapshot) => {
         let shopProducts = [];
-        snapshot.forEach(doc => shopProducts.push({ ...doc.data(), id: doc.id }));
+        snapshot.forEach(doc => {
+            const p = { ...doc.data(), id: doc.id };
+            PRODUCT_CACHE[p.id] = p;
+            shopProducts.push(p);
+        });
 
         if(shopProducts.length === 0) {
             container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">${t.noProducts}</p>`;
@@ -997,7 +1045,7 @@ function renderProducts(shopId) {
         }
 
         container.innerHTML = shopProducts.map(p => `
-            <div class="product-card" onclick="openBuyModal('${p.id}', '${p.name}', ${p.price}, '${p.image}', '${p.shopId}')">
+            <div class="product-card" onclick="openBuyModal('${p.id}')">
                 <div class="product-info-top">
                     <h3>${p.name}</h3>
                 </div>
@@ -1005,6 +1053,12 @@ function renderProducts(shopId) {
                     <img src="${p.image}" alt="${p.name}">
                 </div>
                 <div class="product-info-bottom">
+                    <div style="padding: 10px 15px; border-top: 1px solid #f9f9f9;">
+                         ${p.description ? `<p style="font-size: 11px; color: #666; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px;">${p.description}</p>` : ''}
+                         <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            ${(p.tags || []).map(tag => `<span class="product-tag">${tag}</span>`).join('')}
+                         </div>
+                    </div>
                     <div class="product-card-footer">
                         <div class="product-price">${p.price} د.ع</div>
                         <button class="btn-buy-icon">
@@ -1020,17 +1074,48 @@ function renderProducts(shopId) {
 }
 
 // BUY MODAL
-function openBuyModal(id, name, price, image, shopId) {
-    currentProductToBuy = { id, name, price, image, shopId };
+function openBuyModal(productId) {
+    const p = PRODUCT_CACHE[productId];
+    if (!p) return;
+    
+    currentProductToBuy = p;
+    const images = p.images || [p.image];
+    
     document.getElementById('modal-product-info').innerHTML = `
-        <div style="display:flex; gap:15px; align-items:center; margin-bottom:20px;">
-            <img src="${image}" style="width:60px; height:60px; border-radius:8px; object-fit:cover; border: 2px solid #000;">
-            <div>
-                <strong>${name}</strong><br>
-                <span style="color:var(--accent)">${price} د.ع</span>
+        <div style="margin-bottom:20px;">
+            <div style="margin-bottom:15px;">
+                <div id="modal-gallery" style="width: 100%; position: relative; border-radius: 12px; overflow: hidden; background: #f9f9f9; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; cursor: zoom-in;" onclick="zoomImage(currentGalleryImage || '${images[0]}')">
+                    <img id="main-modal-img" src="${images[0]}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                ${images.length > 1 ? `
+                    <div style="display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 5px;">
+                        ${images.map((img, i) => `
+                            <img src="${img}" onclick="event.stopPropagation(); updateModalGallery('${img}')" style="width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 2px solid ${i === 0 ? '#000' : 'transparent'}; cursor: pointer;">
+                        `).join('')}
+                    </div>
+                ` : ''}
+                <div style="margin-top: 15px;">
+                    <h3 style="margin:0; font-family:var(--font-serif); font-size:24px; font-weight: 700;">${p.name}</h3>
+                    <div style="color:var(--accent); font-weight:700; font-size:20px; margin-top: 4px;">${p.price} د.ع</div>
+                </div>
+            </div>
+            ${p.description ? `<p style="font-size:14px; color:#666; line-height:1.6; margin-bottom:15px;">${p.description}</p>` : ''}
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                ${(p.tags || []).map(t => `<span class="product-tag">${t}</span>`).join('')}
             </div>
         </div>
     `;
+    
+    window.currentGalleryImage = images[0];
+    window.updateModalGallery = (src) => {
+        const main = document.getElementById('main-modal-img');
+        if (main) main.src = src;
+        window.currentGalleryImage = src;
+        // Highlight active thumbnail
+        document.querySelectorAll('#modal-gallery + div img').forEach(img => {
+            img.style.borderColor = (img.src === src || img.getAttribute('src') === src) ? '#000' : 'transparent';
+        });
+    };
     
     // Pre-fill location if user is logged in
     if(loggedInUser && loggedInUser.location) {
@@ -1038,6 +1123,19 @@ function openBuyModal(id, name, price, image, shopId) {
     }
     
     document.getElementById('buy-modal').classList.remove('hidden');
+
+    // Optimize for mobile: scroll down to ordering fields if modal is long
+    if (window.innerWidth < 600) {
+        setTimeout(() => {
+            const modalContent = document.querySelector('#buy-modal .modal-content');
+            if (modalContent) {
+                modalContent.scrollTo({
+                    top: modalContent.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }, 300);
+    }
 }
 
 function closeModal() {
@@ -1382,6 +1480,17 @@ function updateProfileUI() {
         const hpc = document.getElementById('hero-preview-container');
         if (lpc) lpc.innerHTML = `<img src="${logo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
         if (hpc) hpc.innerHTML = `<img src="${hero}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+
+        const removeLogoBtn = document.getElementById('remove-logo-btn');
+        const removeHeroBtn = document.getElementById('remove-hero-btn');
+        if (removeLogoBtn) {
+            if (settings.logo) removeLogoBtn.classList.remove('hidden');
+            else removeLogoBtn.classList.add('hidden');
+        }
+        if (removeHeroBtn) {
+            if (settings.hero) removeHeroBtn.classList.remove('hidden');
+            else removeHeroBtn.classList.add('hidden');
+        }
     }
 }
 
@@ -1445,8 +1554,14 @@ function renderAdminInventory() {
                 <div style="flex:1;">
                     <div style="font-weight:600; font-size:14px;">${p.name}</div>
                     <div style="font-size:12px; color:#999;">${p.price} د.ع</div>
+                    <div style="display: flex; gap: 4px; margin-top: 4px;">
+                        ${(p.tags || []).map(t => `<span class="product-tag" style="padding: 2px 6px; font-size: 8px;">${t}</span>`).join('')}
+                    </div>
                 </div>
-                <button onclick="deleteProduct('${p.id}')" style="color:#ff4444; border:none; background:none; cursor:pointer; font-weight:600; font-size:13px; padding: 5px;">${t.delete}</button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="editProduct('${p.id}')" style="color:#2196F3; border:none; background:none; cursor:pointer; font-weight:600; font-size:13px; padding: 5px;">Edit</button>
+                    <button onclick="deleteProduct('${p.id}')" style="color:#ff4444; border:none; background:none; cursor:pointer; font-weight:600; font-size:13px; padding: 5px;">${t.delete}</button>
+                </div>
             </div>
         `).join('') || `<p style="color:#999; text-align:center; padding:40px;">${t.noProducts}</p>`;
     }, (error) => {
@@ -1485,25 +1600,104 @@ async function compressImage(base64Str, maxWidth = 1024, quality = 0.6) {
     });
 }
 
-let currentBase64Image = null;
+let currentBase64Images = []; // Array for multiple photos
+let currentProductTags = []; // Interactive tags for new product
+let currentEditProductTags = []; // Interactive tags for editing product
+let imageCropQueue = []; // Queue for multiple image cropping
 let currentStoreLogo = null;
 let currentStoreHero = null;
 
+let cropperInstance = null;
+let cropperType = null; // 'product', 'logo', 'hero'
+
+function openCropper(imageSrc, type) {
+    cropperType = type;
+    const modal = document.getElementById('crop-modal');
+    const image = document.getElementById('cropper-image');
+    image.src = imageSrc;
+    
+    modal.classList.remove('hidden');
+    
+    if (cropperInstance) cropperInstance.destroy();
+    
+    // Set aspect ratio based on type
+    let aspectRatio = 1; // Default square (logo/product)
+    if (type === 'hero') aspectRatio = 16 / 9; // Hero is wide
+    
+    cropperInstance = new Cropper(image, {
+        aspectRatio: aspectRatio,
+        viewMode: 2,
+        autoCropArea: 1,
+    });
+}
+
+function closeCropModal() {
+    document.getElementById('crop-modal').classList.add('hidden');
+    if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
+    }
+}
+
+async function applyCrop() {
+    if (!cropperInstance) return;
+    
+    const canvas = cropperInstance.getCroppedCanvas();
+    const croppedImage = canvas.toDataURL('image/jpeg', 0.8);
+    
+    if (cropperType === 'product') {
+        currentBase64Images.push(croppedImage);
+        renderProductPreviews();
+        closeCropModal();
+        // Check if more images in queue
+        processNextCrop();
+    } else if (cropperType === 'logo') {
+        currentStoreLogo = croppedImage;
+        const preview = document.getElementById('logo-preview-container');
+        if (preview) {
+            preview.innerHTML = `<img src="${croppedImage}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+        }
+        const removeBtn = document.getElementById('remove-logo-btn');
+        if (removeBtn) removeBtn.classList.remove('hidden');
+    } else if (cropperType === 'hero') {
+        currentStoreHero = croppedImage;
+        const preview = document.getElementById('hero-preview-container');
+        if (preview) {
+            preview.innerHTML = `<img src="${croppedImage}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+        }
+        const removeBtn = document.getElementById('remove-hero-btn');
+        if (removeBtn) removeBtn.classList.remove('hidden');
+    }
+    
+    closeCropModal();
+}
+
+function removeStoreImage(type) {
+    if (type === 'logo') {
+        currentStoreLogo = ""; // Signal removal/reset in save
+        const preview = document.getElementById('logo-preview-container');
+        const shop = SHOPS.find(s => s.id === loggedInShopId);
+        const defaultLogo = shop?.logo || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=200";
+        if (preview) preview.innerHTML = `<img src="${defaultLogo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; opacity: 0.5;">`;
+        const btn = document.getElementById('remove-logo-btn');
+        if (btn) btn.classList.add('hidden');
+    } else if (type === 'hero') {
+        currentStoreHero = ""; // Signal removal/reset in save
+        const preview = document.getElementById('hero-preview-container');
+        const shop = SHOPS.find(s => s.id === loggedInShopId);
+        const defaultHero = shop?.hero || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1200";
+        if (preview) preview.innerHTML = `<img src="${defaultHero}" style="width:100%; height:100%; object-fit:cover; border-radius:12px; opacity: 0.5;">`;
+        const btn = document.getElementById('remove-hero-btn');
+        if (btn) btn.classList.add('hidden');
+    }
+}
+
 async function previewStoreImage(input, type) {
-    const previewId = type === 'logo' ? 'logo-preview-container' : 'hero-preview-container';
-    const preview = document.getElementById(previewId);
     const file = input.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = async function(e) {
-            const width = type === 'logo' ? 400 : 1200;
-            const compressed = await compressImage(e.target.result, width, 0.6);
-            if (type === 'logo') {
-                currentStoreLogo = compressed;
-            } else {
-                currentStoreHero = compressed;
-            }
-            preview.innerHTML = `<img src="${compressed}" style="width:100%; height:100%; object-fit:cover; border-radius:${type === 'logo' ? '50%' : '12px'};">`;
+        reader.onload = function(e) {
+            openCropper(e.target.result, type);
         };
         reader.readAsDataURL(file);
     }
@@ -1527,8 +1721,8 @@ async function saveStoreSettings() {
             updatedAt: serverTimestamp()
         };
         if (newName) updateData.name = newName;
-        if (currentStoreLogo) updateData.logo = currentStoreLogo;
-        if (currentStoreHero) updateData.hero = currentStoreHero;
+        if (currentStoreLogo !== null) updateData.logo = currentStoreLogo;
+        if (currentStoreHero !== null) updateData.hero = currentStoreHero;
         
         // Update user profile in Firestore
         const oldPhone = loggedInUser.phone;
@@ -1598,20 +1792,86 @@ async function saveStoreSettings() {
 }
 
 async function previewProductImage(input) {
-    const preview = document.getElementById('product-preview');
-    const file = input.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const compressed = await compressImage(e.target.result, 800, 0.7);
-            currentBase64Image = compressed;
-            preview.innerHTML = `<img src="${currentBase64Image}" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border: 2px solid #000; margin-top: 10px;">`;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        currentBase64Image = null;
-        preview.innerHTML = '';
+    const files = Array.from(input.files);
+    
+    if (files.length > 0) {
+        for (const file of files) {
+            if (currentBase64Images.length + imageCropQueue.length >= 5) break; 
+            imageCropQueue.push(file);
+        }
+        
+        if (imageCropQueue.length > 0 && !document.getElementById('crop-modal').classList.contains('hidden') === false) {
+            processNextCrop();
+        }
     }
+    input.value = ''; // Reset input so same file can be selected again
+}
+
+function processNextCrop() {
+    if (imageCropQueue.length === 0) return;
+    
+    const file = imageCropQueue.shift();
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        openCropper(e.target.result, 'product');
+    };
+    reader.readAsDataURL(file);
+}
+
+function renderProductPreviews() {
+    const preview = document.getElementById('product-preview');
+    if (!preview) return;
+    preview.innerHTML = currentBase64Images.map((img, idx) => `
+        <div style="position: relative; width: 80px; height: 80px;">
+            <img src="${img}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
+            <button onclick="removeProductPreviewImage(${idx})" style="position: absolute; -5px; -5px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            ${idx === 0 ? '<span style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 8px; text-align: center; border-radius: 0 0 8px 8px;">Main</span>' : ''}
+        </div>
+    `).join('');
+}
+
+function removeProductPreviewImage(index) {
+    currentBase64Images.splice(index, 1);
+    renderProductPreviews();
+}
+
+function addTagToProduct(type) {
+    const inputId = type === 'new' ? 'p-tag-input' : 'edit-p-tag-input';
+    const input = document.getElementById(inputId);
+    const val = input.value.trim();
+    if (!val) return;
+    
+    if (type === 'new') {
+        if (!currentProductTags.includes(val)) currentProductTags.push(val);
+    } else {
+        if (!currentEditProductTags.includes(val)) currentEditProductTags.push(val);
+    }
+    
+    input.value = '';
+    renderTagPills(type);
+}
+
+function removeTagFromProduct(type, index) {
+    if (type === 'new') {
+        currentProductTags.splice(index, 1);
+    } else {
+        currentEditProductTags.splice(index, 1);
+    }
+    renderTagPills(type);
+}
+
+function renderTagPills(type) {
+    const containerId = type === 'new' ? 'p-tags-container' : 'edit-p-tags-container';
+    const tags = type === 'new' ? currentProductTags : currentEditProductTags;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = tags.map((t, idx) => `
+        <span class="product-tag" style="display: inline-flex; align-items: center; gap: 8px; cursor: default;">
+            ${t}
+            <span onclick="removeTagFromProduct('${type}', ${idx})" style="cursor: pointer; font-size: 16px; font-weight: 400; line-height: 1; border-left: 1px solid #000; padding-left: 6px; margin-left: 2px;">&times;</span>
+        </span>
+    `).join('');
 }
 
 async function addNewProduct() {
@@ -1620,13 +1880,19 @@ async function addNewProduct() {
     const name = document.getElementById('p-name').value;
     const cat = document.getElementById('p-cat').value;
     const price = document.getElementById('p-price').value;
-    const img = currentBase64Image;
-    if(!name || !price || !img) return alert(t.fillFields);
+    const desc = document.getElementById('p-desc').value;
+    const imgs = currentBase64Images;
+    
+    if(!name || !price || imgs.length === 0) return alert(t.fillFields);
+    
     const productData = {
         name,
         category: cat || 'General',
         price: Number(price),
-        image: img,
+        description: desc || "",
+        tags: currentProductTags,
+        image: imgs[0], // primary image
+        images: imgs,   // full gallery
         shopId: loggedInShopId,
         createdAt: serverTimestamp()
     };
@@ -1635,19 +1901,92 @@ async function addNewProduct() {
         document.getElementById('p-name').value = '';
         document.getElementById('p-cat').value = '';
         document.getElementById('p-price').value = '';
+        document.getElementById('p-desc').value = '';
+        document.getElementById('p-tag-input').value = '';
+        currentProductTags = [];
+        renderTagPills('new');
         document.getElementById('product-preview').innerHTML = '';
-        currentBase64Image = null;
+        currentBase64Images = [];
+        showToast(currentLang === 'ar' ? "تمت إضافة المنتج!" : "Product Added!");
     } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, "inventory");
     }
 }
 
 async function deleteProduct(productId) {
+    const t = TRANSLATIONS[currentLang];
+    if(!confirm(currentLang === 'ar' ? 'هل أنت متأكد من حذف هذا المنتج؟' : "Are you sure you want to delete this product?")) return;
     try {
         await deleteDoc(doc(db, "inventory", productId));
     } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `inventory/${productId}`);
     }
+}
+
+async function editProduct(productId) {
+    try {
+        const productSnap = await getDoc(doc(db, "inventory", productId));
+        if (productSnap.exists()) {
+            const p = productSnap.data();
+            document.getElementById('edit-p-id').value = productId;
+            document.getElementById('edit-p-name').value = p.name || '';
+            document.getElementById('edit-p-cat').value = p.category || 'General';
+            document.getElementById('edit-p-price').value = p.price || '';
+            document.getElementById('edit-p-desc').value = p.description || '';
+            currentEditProductTags = p.tags || [];
+            renderTagPills('edit');
+            
+            document.getElementById('product-edit-modal').classList.remove('hidden');
+        }
+    } catch (error) {
+        handleFirestoreError(error, OperationType.GET, `inventory/${productId}`);
+    }
+}
+
+function closeProductEditModal() {
+    document.getElementById('product-edit-modal').classList.add('hidden');
+}
+
+async function saveProductEdit() {
+    if (!db) return;
+    const id = document.getElementById('edit-p-id').value;
+    const name = document.getElementById('edit-p-name').value.trim();
+    const cat = document.getElementById('edit-p-cat').value;
+    const price = document.getElementById('edit-p-price').value;
+    const desc = document.getElementById('edit-p-desc').value.trim();
+    
+    if(!name || !price) return alert(TRANSLATIONS[currentLang].fillFields);
+    
+    try {
+        const updateData = {
+            name,
+            category: cat,
+            price: Number(price),
+            description: desc,
+            tags: currentEditProductTags,
+            updatedAt: serverTimestamp()
+        };
+        await updateDoc(doc(db, "inventory", id), updateData);
+        closeProductEditModal();
+        showToast(currentLang === 'ar' ? "تم تحديث المنتج!" : "Product Updated!");
+    } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `inventory/${id}`);
+        showToast("Error updating product");
+    }
+}
+
+function zoomImage(src) {
+    const modal = document.getElementById('zoom-modal');
+    const img = document.getElementById('zoom-image');
+    if (modal && img) {
+        img.src = src;
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeZoomModal() {
+    const modal = document.getElementById('zoom-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function masterLogout() {
